@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -368,6 +369,7 @@ namespace NamPhuThuy.Common
             LogWithoutHeader(sb.ToString(), color, context, setBold);
         }
         
+        
         [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
         public static void LogList(IList list, string title = "List", Color color = default, bool setBold = false, Object context = null)
         {
@@ -386,6 +388,35 @@ namespace NamPhuThuy.Common
             for (int i = 0; i < list.Count; i++)
             {
                 sb.AppendLine($"  [{i}] -> {list[i]}");
+            }
+
+            LogWithoutHeader(sb.ToString(), color, context, setBold);
+        }
+
+        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        public static void LogListPair(IList list1, IList list2, string title = "List Pair", Color color = default, bool setBold = false, Object context = null)
+        {
+            if (!enableLog)
+                return;
+
+            if (list1 == null && list2 == null)
+            {
+                LogWithoutHeader($"{title}: Both lists are NULL", color, context, setBold);
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            int count1 = list1?.Count ?? 0;
+            int count2 = list2?.Count ?? 0;
+            int maxCount = Mathf.Max(count1, count2);
+
+            sb.AppendLine($"{title} (count1={count1}, count2={count2}):");
+
+            for (int i = 0; i < maxCount; i++)
+            {
+                string item1 = (list1 != null && i < list1.Count) ? list1[i]?.ToString() ?? "null" : "-";
+                string item2 = (list2 != null && i < list2.Count) ? list2[i]?.ToString() ?? "null" : "-";
+                sb.AppendLine($"  [{i}] {item1} <-> {item2}");
             }
 
             LogWithoutHeader(sb.ToString(), color, context, setBold);
