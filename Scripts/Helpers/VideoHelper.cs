@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.Video;
 
 namespace NamPhuThuy.Common
@@ -28,10 +29,10 @@ namespace NamPhuThuy.Common
                 return null;
             }
 
-            return context.StartCoroutine(LoadVideoCoroutine(videoPlayer, videoName, onSuccess, onError));
+            return context.StartCoroutine(IE_LoadVideo(videoPlayer, videoName, onSuccess, onError));
         }
 
-        private static IEnumerator LoadVideoCoroutine(
+        private static IEnumerator IE_LoadVideo(
             VideoPlayer videoPlayer,
             string videoName,
             Action onSuccess,
@@ -43,7 +44,7 @@ namespace NamPhuThuy.Common
                 yield break;
             }
 
-            string filePath = GetVideoPath(videoName);
+            string filePath = System.IO.Path.Combine(Application.streamingAssetsPath, $"{videoName}.mp4");;
             
             // Optional: Check file existence only on platforms where it works
             #if !UNITY_ANDROID && !UNITY_WEBGL
@@ -62,6 +63,47 @@ namespace NamPhuThuy.Common
             bool errorOccurred = false;
             string errorMessage = string.Empty;
 
+            videoPlayer.errorReceived += OnVideoError;
+            videoPlayer.prepareCompleted += OnPrepareCompleted;
+
+            // Set video URL with proper format
+            #if UNITY_ANDROID
+            videoPlayer.url = filePath;
+            #else
+            videoPlayer.url = $"file://{filePath}";
+            #endif
+
+            
+            /*
+            using (UnityWebRequest req = UnityWebRequest.Get(filePath))
+            {
+                yield return req.SendWebRequest();
+
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    
+                }
+                else
+                {
+                    videoPlayer.url = $"file://{filePath}";
+                }
+            }*/
+            
+            videoPlayer.Prepare();
+
+            // Wait for prepare to complete or error
+            while (!videoPlayer.isPrepared && !errorOccurred)
+            {
+                yield return null;
+            }
+
+            if (errorOccurred)
+            {
+                DebugLogger.LogError($"Video loading failed: {errorMessage}");
+                onError?.Invoke(errorMessage);
+            }
+            
+            
             void OnVideoError(VideoPlayer vp, string message)
             {
                 errorOccurred = true;
@@ -77,38 +119,6 @@ namespace NamPhuThuy.Common
                     onSuccess?.Invoke();
                 }
             }
-
-            videoPlayer.errorReceived += OnVideoError;
-            videoPlayer.prepareCompleted += OnPrepareCompleted;
-
-            // Set video URL with proper format
-            #if UNITY_ANDROID
-            videoPlayer.url = filePath;
-            #else
-            videoPlayer.url = $"file://{filePath}";
-            #endif
-
-            videoPlayer.Prepare();
-
-            // Wait for prepare to complete or error
-            while (!videoPlayer.isPrepared && !errorOccurred)
-            {
-                yield return null;
-            }
-
-            if (errorOccurred)
-            {
-                DebugLogger.LogError($"Video loading failed: {errorMessage}");
-                onError?.Invoke(errorMessage);
-            }
-        }
-
-        /// <summary>
-        /// Gets the correct video path for the current platform
-        /// </summary>
-        public static string GetVideoPath(string videoName, string extension = "mp4")
-        {
-            return System.IO.Path.Combine(Application.streamingAssetsPath, $"{videoName}.{extension}");
         }
 
         /// <summary>
