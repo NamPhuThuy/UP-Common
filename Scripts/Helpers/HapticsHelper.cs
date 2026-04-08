@@ -6,7 +6,7 @@ using UnityEngine;
 /// Handles haptics behaviour with static methods
 /// </summary>
 
-namespace NamPhuThuy
+namespace NamPhuThuy.Common
 {
     public class HapticsHelper : MonoBehaviour
     {
