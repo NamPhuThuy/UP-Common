@@ -26,7 +26,7 @@ Math/other: ∎ ■ ⬛ ⦿ ⧈ ⬚
 namespace NamPhuThuy.Common
 {
     /// <summary>
-    /// Add ENABLE_DEBUG_LOGGER in scripting symbols to use this class
+    /// Add USE_DEBUG_LOGGER in scripting symbols to use this class
     /// </summary>
     public static partial class DebugLogger
     {
@@ -105,7 +105,7 @@ namespace NamPhuThuy.Common
         
         #region ✧ Log Error
 
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogError(string message, Color color = default, bool setBold = false, Object context = null)
         {
             if (!enableLog)
@@ -116,7 +116,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Log error only if condition is true
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogErrorIf(bool condition, string content, Color color = default, bool setBold = false)
         {
             if (!enableLog)
@@ -132,7 +132,7 @@ namespace NamPhuThuy.Common
 
         #region ✧ Log Warning
         
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogWarning(string message, Color color = default, bool setBold = false, Object context = null)
         {
             if (!enableLog)
@@ -144,7 +144,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Log warning only if condition is true
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogWarningIf(bool condition, string content, Color color = default, bool setBold = false)
         {
             if (!enableLog)
@@ -162,7 +162,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Log only if condition is true
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogIf(bool condition, string message, Color color = default, bool setBold = false)
         {
             if (!enableLog)
@@ -174,14 +174,14 @@ namespace NamPhuThuy.Common
             }
         }
         
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogWithFrame(string message, Color color = default, bool setBold = false, Object context = null)
         {
             string frameInfo = $"[Frame {Time.frameCount}] ";
             Debug.Log(ColorizedText($"{frameInfo} - {message}", color, setBold), context: context);
         }
 
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogFrog([CallerLineNumber] int line = 0
             , [CallerMemberName] string memberName = ""
             , [CallerFilePath] string filePath = "", string message = "", Color color = default, Object context = null, bool setBold = false)
@@ -198,7 +198,7 @@ namespace NamPhuThuy.Common
             Debug.Log(ColorizedText(resMessage, currentColor, setBold), context: context);
         }
         
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void Log(
             [CallerLineNumber] int line = 0
             , [CallerMemberName] string memberName = ""
@@ -223,7 +223,7 @@ namespace NamPhuThuy.Common
             Usage is simple: just put a LogCaller(); at any line you want. The compiler will pass in the 3 parameters for you.*/
         }
 
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogWithoutHeader(string message = "", Color color = default, Object context = null,
             bool setBold = false)
         {
@@ -244,7 +244,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Breaks execution in the editor and logs a message
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogBreak(string message = "", Color color = default, bool setBold = false,
             [CallerLineNumber] int line = 0,
             [CallerMemberName] string memberName = "",
@@ -270,7 +270,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Conditional break - only breaks if condition is true
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogBreakIf(bool condition, string message = "", Color color = default, bool setBold = false,
             [CallerLineNumber] int line = 0,
             [CallerMemberName] string memberName = "",
@@ -285,7 +285,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Assert with break - breaks if condition is false
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogAssert(bool condition, string message = "", Color color = default, bool setBold = false,
             [CallerLineNumber] int line = 0,
             [CallerMemberName] string memberName = "",
@@ -304,7 +304,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Try-catch wrapper with logging
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogTry(System.Action action, string context = "Unknown operation", Object contextObject = null)
         {
             try
@@ -320,7 +320,7 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Log exception with full details
         /// </summary>
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogException(System.Exception ex, string context = "", Object contextObject = null)
         {
             if (!enableLog)
@@ -337,7 +337,7 @@ namespace NamPhuThuy.Common
 
         #region ✧ Data Structure Logging
         
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogAsJson(object obj, string title = "", Color color = default, bool setBold = false, Object context = null)
         {
             string json = JsonUtility.ToJson(obj, true);
@@ -345,7 +345,7 @@ namespace NamPhuThuy.Common
             LogWithoutHeader(message, color, context, setBold);
         }
 
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogDictionary(IDictionary dict, string title = "Dictionary", 
             Color color = default, bool setBold = false, Object context = null)
         {
@@ -370,7 +370,7 @@ namespace NamPhuThuy.Common
         }
         
         
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogList(IList list, string title = "List", Color color = default, bool setBold = false, Object context = null)
         {
             if (!enableLog)
@@ -393,7 +393,7 @@ namespace NamPhuThuy.Common
             LogWithoutHeader(sb.ToString(), color, context, setBold);
         }
 
-        [System.Diagnostics.Conditional("ENABLE_DEBUG_LOGGER")]
+        [System.Diagnostics.Conditional("USE_DEBUG_LOGGER")]
         public static void LogListPair(IList list1, IList list2, string title = "List Pair", Color color = default, bool setBold = false, Object context = null)
         {
             if (!enableLog)
