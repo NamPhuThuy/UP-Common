@@ -41,7 +41,43 @@ namespace NamPhuThuy.EditorTools
         {
             LoadSceneByIndex(3);
         }
+        
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 4 " + ALT + "5")]
+        static void LoadScene4()
+        {
+            LoadSceneByIndex(4);
+        }
+        
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 5 " + ALT + "6")]
+        static void LoadScene5()
+        {
+            LoadSceneByIndex(5);
+        }
+        
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 6 " + ALT + "7")]
+        static void LoadScene6()
+        {
+            LoadSceneByIndex(6);
+        }
 
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 7 " + ALT + "8")]
+        static void LoadScene7()
+        {
+            LoadSceneByIndex(7);
+        }
+        
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 8 " + ALT + "9")]
+        static void LoadScene8()
+        {
+            LoadSceneByIndex(8);
+        }
+        
+        [MenuItem(SWITCH_SCENE_MENU_NAME + "/Scene 9 " + ALT + "0")]
+        static void LoadScene9()
+        {
+            LoadSceneByIndex(9);
+        }
+        
         static void LoadSceneByIndex(int buildIndex)
         {
             EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
