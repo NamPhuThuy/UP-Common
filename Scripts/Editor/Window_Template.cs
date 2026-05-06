@@ -6,7 +6,7 @@ using UnityEditor;
 namespace NamPhuThuy.Common
 {
 #if UNITY_EDITOR
-    public class WindowTemplate : EditorWindow
+    public class Window_Template : EditorWindow
     {
         #region Private Fields
         private Vector2 _scrollPos;
@@ -20,10 +20,10 @@ namespace NamPhuThuy.Common
         #endregion
 
         #region Menu Item
-        [MenuItem("NamPhuThuy/Common/Window Template")]
+        [MenuItem("NamPhuThuy/Common/Window - Template")]
         public static void ShowWindow()
         {
-            WindowTemplate window = GetWindow<WindowTemplate>("Window Template");
+            Window_Template window = GetWindow<Window_Template>("Window Template");
             window.minSize = new Vector2(400, 600);
             window.Show();
         }
