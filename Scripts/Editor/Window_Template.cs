@@ -12,15 +12,20 @@ namespace NamPhuThuy.Common
         private Vector2 _scrollPos;
         private Vector2 _scrollPosSection1;
         private Vector2 _scrollPosSection2;
+        
+        private GUIStyle _paddedStyle;
         private GUIStyle _centeredButtonStyle;
         private GUIStyle _centeredLabelStyle;
 
-        // Example data field to demonstrate undo recording
+        // Example data field to demonstrate undo recording and EditorPrefs
         [SerializeField] private string _exampleText = "Editable value";
+        
+        // EditorPrefs Key
+        private const string PREF_KEY_EXAMPLE_TEXT = "NamPhuThuy_Template_ExampleText";
         #endregion
 
         #region Menu Item
-        [MenuItem("NamPhuThuy/Common/Window - Template")]
+        [MenuItem("NamPhuThuy/Common/Window - Template (IMGUI)")]
         public static void ShowWindow()
         {
             Window_Template window = GetWindow<Window_Template>("Window Template");
@@ -32,24 +37,23 @@ namespace NamPhuThuy.Common
         #region Unity Callbacks
         private void OnEnable()
         {
-            // Initialize data when window opens
+            // Load persisted data when the window opens or after script reload
+            _exampleText = EditorPrefs.GetString(PREF_KEY_EXAMPLE_TEXT, "Default Editable Value");
         }
 
         private void OnDisable()
         {
-            // Cleanup when window closes
+            // Save data when window closes to persist across Unity sessions
+            EditorPrefs.SetString(PREF_KEY_EXAMPLE_TEXT, _exampleText);
         }
 
         private void OnGUI()
         {
             InitializeStyles();
 
-            float padding = 20f;
-            Rect areaRect = new Rect(padding, padding, position.width - 2 * padding, position.height - 2 * padding);
-
-            GUILayout.BeginArea(areaRect);
+            // Better layout approach: Use a padded GUIStyle instead of GUILayout.BeginArea
+            EditorGUILayout.BeginVertical(_paddedStyle);
             
-            // Main scroll view that wraps everything
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
 
             DrawHeader();
@@ -60,15 +64,19 @@ namespace NamPhuThuy.Common
 
             EditorGUILayout.EndScrollView();
             
-            GUILayout.EndArea();
+            EditorGUILayout.EndVertical();
         }
         #endregion
 
         #region Initialization
-        
-        
-          private void InitializeStyles()
+        private void InitializeStyles()
         {
+            if (_paddedStyle == null)
+            {
+                _paddedStyle = new GUIStyle();
+                _paddedStyle.padding = new RectOffset(20, 20, 20, 20);
+            }
+
             if (_centeredButtonStyle == null)
             {
                 _centeredButtonStyle = new GUIStyle(GUI.skin.button)
@@ -88,28 +96,44 @@ namespace NamPhuThuy.Common
                 };
             }
         }
+        #endregion
 
+        #region Drawing
         private void DrawHeader()
         {
-            GUILayout.Label("Window Template", _centeredLabelStyle);
+            GUILayout.Label("Window Template (IMGUI)", _centeredLabelStyle);
             EditorGUILayout.HelpBox(
                 "Description of what this window does.\n" +
-                "This template also shows how to use the Unity Re/Undo system from an editor window.",
+                "This template demonstrates IMGUI best practices including GUI.skin.box, EditorPrefs, change checks, and the Undo system.",
                 MessageType.Info);
         }
 
         private void DrawContent()
         {
-            // Simple example field whose changes can be recorded with Undo
+            // Use GUI.skin.box for standard visual grouping of sections
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Data Section", EditorStyles.boldLabel);
+            
             EditorGUILayout.LabelField("Example value stored on this window:");
-            _exampleText = EditorGUILayout.TextField("Example Text", _exampleText);
+            
+            // Example of using BeginChangeCheck to properly record Undo for text fields
+            EditorGUI.BeginChangeCheck();
+            string newText = EditorGUILayout.TextField("Example Text", _exampleText);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(this, "Change Example Text");
+                _exampleText = newText;
+            }
+
+            EditorGUILayout.EndVertical();
 
             GUILayout.Space(12);
 
             // Section 1
-            GUILayout.Label("Section 1", _centeredLabelStyle);
-            _scrollPosSection1 = EditorGUILayout.BeginScrollView(_scrollPosSection1, GUILayout.Height(250));
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Section 1 (List)", _centeredLabelStyle);
             
+            _scrollPosSection1 = EditorGUILayout.BeginScrollView(_scrollPosSection1, GUILayout.Height(200));
             for (int i = 0; i < 20; i++)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -117,20 +141,20 @@ namespace NamPhuThuy.Common
                 EditorGUILayout.TextField($"Value {i}");
                 if (GUILayout.Button("X", GUILayout.Width(20)))
                 {
-                    // Example: here you would call a method that uses Undo for remove
-                    // ExampleRemoveWithUndo(targetObject);
+                    // Call method that uses Undo for remove
                 }
                 EditorGUILayout.EndHorizontal();
             }
-            
             EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
 
             GUILayout.Space(16);
 
             // Section 2
-            GUILayout.Label("Section 2", _centeredLabelStyle);
-            _scrollPosSection2 = EditorGUILayout.BeginScrollView(_scrollPosSection2, GUILayout.Height(250));
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Section 2 (Object Fields)", _centeredLabelStyle);
             
+            _scrollPosSection2 = EditorGUILayout.BeginScrollView(_scrollPosSection2, GUILayout.Height(200));
             for (int i = 0; i < 15; i++)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -138,12 +162,12 @@ namespace NamPhuThuy.Common
                 EditorGUILayout.ObjectField(null, typeof(GameObject), false);
                 if (GUILayout.Button("X", GUILayout.Width(20)))
                 {
-                    // Example: here you would call a method that uses Undo for remove
+                    // Call method that uses Undo for remove
                 }
                 EditorGUILayout.EndHorizontal();
             }
-            
             EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawButtons()
@@ -162,32 +186,27 @@ namespace NamPhuThuy.Common
 
             GUILayout.EndHorizontal();
         }
-        
         #endregion
         
-        
         #region Private Methods
-      
-
         /// <summary>
         /// Template: how to wrap an operation in a single Unity Re/Undo group.
         /// Copy this pattern for your own editor operations.
         /// </summary>
         private void PerformExampleUndoableAction()
         {
-            // 1\. Start a group and give it a name (what shows in Edit \> Undo)
+            // 1. Start a group and give it a name (what shows in Edit > Undo)
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName("Template - Example Undoable Action");
             int undoGroup = Undo.GetCurrentGroup();
 
-            // 2\. Record objects BEFORE you modify them
-            // In this simple example we just record the window itself
+            // 2. Record objects BEFORE you modify them
             Undo.RecordObject(this, "Change Example Text");
 
-            // 3\. Perform your changes
+            // 3. Perform your changes
             _exampleText = "Changed by Action 1";
 
-            // 4\. Collapse to a single undo step
+            // 4. Collapse to a single undo step
             Undo.CollapseUndoOperations(undoGroup);
 
             Debug.Log("Performed example undoable action from WindowTemplate.");
