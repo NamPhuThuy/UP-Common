@@ -1,21 +1,33 @@
+// ───────────────────────────────────────────────────────────────────────
+// RULES:
+// 1. PROCESS: Use Debug.Log for trace steps.
+// 2. SAFETY: Use Debug.LogError in null/boundary checks.
+// ───────────────────────────────────────────────────────────────────────
+
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.UIElements;
 
 namespace NamPhuThuy.Common
 {
     public class Window_AssetNameModifier : EditorWindow
     {
         #region Private Fields
-        private Vector2 _scrollPos;
-        private Vector2 _scrollPosAssetList;
-        private GUIStyle _centeredButtonStyle;
-        private GUIStyle _centeredLabelStyle;
-        private GUIStyle _headerStyle;
+        // EditorPrefs Keys
+        private const string PREF_KEY_ASSET_A_PATH = "NamPhuThuy_AssetNameModifier_AssetAPath";
+        private const string PREF_KEY_ASSET_B_PATH = "NamPhuThuy_AssetNameModifier_AssetBPath";
+        private const string PREF_KEY_TARGET_FOLDER_PATH = "NamPhuThuy_AssetNameModifier_TargetFolderPath";
+        private const string PREF_KEY_BASE_NAME_PREFIX = "NamPhuThuy_AssetNameModifier_BaseNamePrefix";
+        private const string PREF_KEY_SUFFIX_FORMAT = "NamPhuThuy_AssetNameModifier_SuffixFormat";
+        private const string PREF_KEY_START_INDEX = "NamPhuThuy_AssetNameModifier_StartIndex";
+        private const string PREF_KEY_INCLUDE_SUBFOLDERS = "NamPhuThuy_AssetNameModifier_IncludeSubfolders";
+        private const string PREF_KEY_FILTER_BY_EXTENSION = "NamPhuThuy_AssetNameModifier_FilterByExtension";
 
         // Swap functionality
         private Object _assetA;
@@ -29,6 +41,10 @@ namespace NamPhuThuy.Common
         private int _startIndex = 1;
         private bool _includeSubfolders = false;
         private string _filterByExtension = ""; // Empty = all types
+
+        // UI references
+        private VisualElement _listContainer;
+        private Button _applyBtn;
         #endregion
 
         #region Menu Item
@@ -36,7 +52,7 @@ namespace NamPhuThuy.Common
         public static void ShowWindow()
         {
             Window_AssetNameModifier window = GetWindow<Window_AssetNameModifier>("Asset Name Modifier");
-            window.minSize = new Vector2(450, 700);
+            window.minSize = new Vector2(450, 600);
             window.Show();
         }
         #endregion
@@ -44,199 +60,376 @@ namespace NamPhuThuy.Common
         #region Unity Callbacks
         private void OnEnable()
         {
-            // Initialize when window opens
+            Debug.Log("[AssetNameModifier] OnEnable");
+            
+            // Load saved preferences
+            string pathA = EditorPrefs.GetString(PREF_KEY_ASSET_A_PATH, "");
+            if (!string.IsNullOrEmpty(pathA)) _assetA = AssetDatabase.LoadAssetAtPath<Object>(pathA);
+            
+            string pathB = EditorPrefs.GetString(PREF_KEY_ASSET_B_PATH, "");
+            if (!string.IsNullOrEmpty(pathB)) _assetB = AssetDatabase.LoadAssetAtPath<Object>(pathB);
+            
+            string targetPath = EditorPrefs.GetString(PREF_KEY_TARGET_FOLDER_PATH, "");
+            if (!string.IsNullOrEmpty(targetPath)) _targetFolder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(targetPath);
+            
+            _baseNamePrefix = EditorPrefs.GetString(PREF_KEY_BASE_NAME_PREFIX, "Asset");
+            _suffixFormat = EditorPrefs.GetString(PREF_KEY_SUFFIX_FORMAT, "_{0:00}");
+            _startIndex = EditorPrefs.GetInt(PREF_KEY_START_INDEX, 1);
+            _includeSubfolders = EditorPrefs.GetBool(PREF_KEY_INCLUDE_SUBFOLDERS, false);
+            _filterByExtension = EditorPrefs.GetString(PREF_KEY_FILTER_BY_EXTENSION, "");
         }
 
         private void OnDisable()
         {
-            // Cleanup when window closes
-        }
-
-        private void OnGUI()
-        {
-            InitializeStyles();
-
-            float padding = 20f;
-            Rect areaRect = new Rect(padding, padding, position.width - 2 * padding, position.height - 2 * padding);
-
-            GUILayout.BeginArea(areaRect);
+            Debug.Log("[AssetNameModifier] OnDisable");
             
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-
-            DrawHeader();
-            GUILayout.Space(10);
-            DrawSwapSection();
-            GUILayout.Space(20);
-            DrawBatchRenameSection();
-
-            EditorGUILayout.EndScrollView();
+            // Save preferences
+            EditorPrefs.SetString(PREF_KEY_ASSET_A_PATH, _assetA != null ? AssetDatabase.GetAssetPath(_assetA) : "");
+            EditorPrefs.SetString(PREF_KEY_ASSET_B_PATH, _assetB != null ? AssetDatabase.GetAssetPath(_assetB) : "");
+            EditorPrefs.SetString(PREF_KEY_TARGET_FOLDER_PATH, _targetFolder != null ? AssetDatabase.GetAssetPath(_targetFolder) : "");
             
-            GUILayout.EndArea();
-        }
-        #endregion
-
-        #region Initialization
-        private void InitializeStyles()
-        {
-            if (_centeredButtonStyle == null)
-            {
-                _centeredButtonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 13,
-                    fontStyle = FontStyle.Bold
-                };
-            }
-
-            if (_centeredLabelStyle == null)
-            {
-                _centeredLabelStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 16
-                };
-            }
-
-            if (_headerStyle == null)
-            {
-                _headerStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    fontSize = 14,
-                    fontStyle = FontStyle.Bold
-                };
-            }
+            EditorPrefs.SetString(PREF_KEY_BASE_NAME_PREFIX, _baseNamePrefix);
+            EditorPrefs.SetString(PREF_KEY_SUFFIX_FORMAT, _suffixFormat);
+            EditorPrefs.SetInt(PREF_KEY_START_INDEX, _startIndex);
+            EditorPrefs.SetBool(PREF_KEY_INCLUDE_SUBFOLDERS, _includeSubfolders);
+            EditorPrefs.SetString(PREF_KEY_FILTER_BY_EXTENSION, _filterByExtension);
         }
 
-        private void DrawHeader()
+        public void CreateGUI()
         {
-            GUILayout.Label("Asset Name Modifier", _centeredLabelStyle);
-            EditorGUILayout.HelpBox(
+            Debug.Log("[AssetNameModifier] CreateGUI");
+            var root = rootVisualElement;
+            root.style.paddingLeft = 20;
+            root.style.paddingRight = 20;
+            root.style.paddingTop = 20;
+            root.style.paddingBottom = 20;
+
+            // ── Header Section ──
+            var header = new Label("Asset Name Modifier")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 10 }
+            };
+            root.Add(header);
+
+            var helpBox = new HelpBox(
                 "Tool for swapping asset names and batch renaming assets in folders.\n" +
                 "Use Ctrl+Z to undo any rename operations.",
-                MessageType.Info);
+                HelpBoxMessageType.Info);
+            root.Add(helpBox);
+
+            var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1, marginTop = 10 } };
+            root.Add(mainScroll);
+
+            // ── Content Sections ──
+            mainScroll.Add(BuildSwapSection());
+            mainScroll.Add(BuildBatchRenameSection());
         }
         #endregion
 
-        #region Swap Section
-        private void DrawSwapSection()
+        #region UI Builders
+        /// <summary>
+        /// Creates a reusable box style for visually grouping elements
+        /// </summary>
+        private VisualElement BuildBox()
         {
-            GUILayout.Label("Swap Asset Names", _headerStyle);
-            EditorGUILayout.HelpBox("Swap the file names of two selected assets.", MessageType.None);
+            var box = new VisualElement();
+            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
+            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
+            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
+            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
+            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
+            box.style.marginBottom = 10;
+            return box;
+        }
 
-            _assetA = EditorGUILayout.ObjectField("Asset A", _assetA, typeof(Object), false);
-            _assetB = EditorGUILayout.ObjectField("Asset B", _assetB, typeof(Object), false);
+        private VisualElement BuildSwapSection()
+        {
+            var box = BuildBox();
 
-            EditorGUILayout.Space(5);
+            var title = new Label("Swap Asset Names") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
+            box.Add(title);
 
-            EditorGUILayout.BeginHorizontal();
-            
-            if (GUILayout.Button("Use Selected Assets", GUILayout.Height(25)))
+            var desc = new HelpBox("Swap the file names of two selected assets.", HelpBoxMessageType.None);
+            box.Add(desc);
+
+            var assetAField = new ObjectField("Asset A")
             {
+                objectType = typeof(Object),
+                value = _assetA
+            };
+            assetAField.RegisterValueChangedCallback(e =>
+            {
+                _assetA = e.newValue;
+                EditorPrefs.SetString(PREF_KEY_ASSET_A_PATH, _assetA != null ? AssetDatabase.GetAssetPath(_assetA) : "");
+            });
+            box.Add(assetAField);
+
+            var assetBField = new ObjectField("Asset B")
+            {
+                objectType = typeof(Object),
+                value = _assetB
+            };
+            assetBField.RegisterValueChangedCallback(e =>
+            {
+                _assetB = e.newValue;
+                EditorPrefs.SetString(PREF_KEY_ASSET_B_PATH, _assetB != null ? AssetDatabase.GetAssetPath(_assetB) : "");
+            });
+            box.Add(assetBField);
+
+            // Buttons row
+            var buttonRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5 } };
+
+            var useSelectedBtn = new Button(() =>
+            {
+                Debug.Log("[AssetNameModifier] Assigning selected assets...");
                 AssignSelectedAssets();
-            }
-
-            if (GUILayout.Button("Clear", GUILayout.Height(25)))
+                assetAField.value = _assetA;
+                assetBField.value = _assetB;
+            })
             {
+                text = "Use Selected Assets",
+                style = { flexGrow = 1, height = 25 }
+            };
+            buttonRow.Add(useSelectedBtn);
+
+            var clearBtn = new Button(() =>
+            {
+                Debug.Log("[AssetNameModifier] Clearing swap inputs.");
                 _assetA = null;
                 _assetB = null;
-            }
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(5);
-
-            if (GUILayout.Button("SWAP NAMES", _centeredButtonStyle, GUILayout.Height(35)))
+                assetAField.value = null;
+                assetBField.value = null;
+            })
             {
-                PerformSwapWithUndo();
-            }
+                text = "Clear",
+                style = { flexGrow = 1, height = 25 }
+            };
+            buttonRow.Add(clearBtn);
+            box.Add(buttonRow);
+
+            var swapBtn = new Button(PerformSwapWithUndo)
+            {
+                text = "SWAP NAMES",
+                style = { height = 35, unityFontStyleAndWeight = FontStyle.Bold, marginTop = 5 }
+            };
+            box.Add(swapBtn);
+
+            return box;
         }
-        #endregion
 
-        #region Batch Rename Section
-        private void DrawBatchRenameSection()
+        private VisualElement BuildBatchRenameSection()
         {
-            GUILayout.Label("Batch Rename Assets", _headerStyle);
-            EditorGUILayout.HelpBox("Rename multiple assets in a folder with incremental suffixes.", MessageType.None);
+            var box = BuildBox();
 
-            // Folder selection
-            _targetFolder = (DefaultAsset)EditorGUILayout.ObjectField(
-                "Target Folder", 
-                _targetFolder, 
-                typeof(DefaultAsset), 
-                false);
+            var title = new Label("Batch Rename Assets") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
+            box.Add(title);
 
-            EditorGUILayout.Space(5);
+            var desc = new HelpBox("Rename multiple assets in a folder with incremental suffixes.", HelpBoxMessageType.None);
+            box.Add(desc);
 
-            // Rename settings
-            _baseNamePrefix = EditorGUILayout.TextField("Base Name", _baseNamePrefix);
-            _suffixFormat = EditorGUILayout.TextField("Suffix Format", _suffixFormat);
-            EditorGUILayout.HelpBox(
+            // Folder Field
+            var folderField = new ObjectField("Target Folder")
+            {
+                objectType = typeof(DefaultAsset),
+                value = _targetFolder
+            };
+            folderField.RegisterValueChangedCallback(e =>
+            {
+                _targetFolder = e.newValue as DefaultAsset;
+                if (_targetFolder != null)
+                {
+                    EditorPrefs.SetString(PREF_KEY_TARGET_FOLDER_PATH, AssetDatabase.GetAssetPath(_targetFolder));
+                }
+                else
+                {
+                    EditorPrefs.SetString(PREF_KEY_TARGET_FOLDER_PATH, "");
+                }
+            });
+            box.Add(folderField);
+
+            // Base Name
+            var baseNameField = new TextField("Base Name") { value = _baseNamePrefix };
+            baseNameField.RegisterValueChangedCallback(e =>
+            {
+                _baseNamePrefix = e.newValue;
+                EditorPrefs.SetString(PREF_KEY_BASE_NAME_PREFIX, _baseNamePrefix);
+                RefreshListUI();
+            });
+            box.Add(baseNameField);
+
+            // Suffix Format
+            var suffixFormatField = new TextField("Suffix Format") { value = _suffixFormat };
+            suffixFormatField.RegisterValueChangedCallback(e =>
+            {
+                _suffixFormat = e.newValue;
+                EditorPrefs.SetString(PREF_KEY_SUFFIX_FORMAT, _suffixFormat);
+                RefreshListUI();
+            });
+            box.Add(suffixFormatField);
+
+            var suffixHelp = new HelpBox(
                 "Suffix Format examples:\n" +
                 "• _{0:00} → _01, _02, _03...\n" +
                 "• _{0:000} → _001, _002, _003...\n" +
                 "• _{0} → _1, _2, _3...",
-                MessageType.None);
+                HelpBoxMessageType.None);
+            box.Add(suffixHelp);
 
-            _startIndex = EditorGUILayout.IntField("Start Index", _startIndex);
-            _includeSubfolders = EditorGUILayout.Toggle("Include Subfolders", _includeSubfolders);
-            _filterByExtension = EditorGUILayout.TextField("Filter Extension (optional)", _filterByExtension);
-            EditorGUILayout.HelpBox("Leave empty for all types, or enter like: .png, .prefab, .asset", MessageType.None);
+            // Start Index
+            var startIndexField = new IntegerField("Start Index") { value = _startIndex };
+            startIndexField.RegisterValueChangedCallback(e =>
+            {
+                _startIndex = e.newValue;
+                EditorPrefs.SetInt(PREF_KEY_START_INDEX, _startIndex);
+                RefreshListUI();
+            });
+            box.Add(startIndexField);
 
-            EditorGUILayout.Space(8);
+            // Include Subfolders Toggle
+            var subfoldersToggle = new Toggle("Include Subfolders") { value = _includeSubfolders };
+            subfoldersToggle.RegisterValueChangedCallback(e =>
+            {
+                _includeSubfolders = e.newValue;
+                EditorPrefs.SetBool(PREF_KEY_INCLUDE_SUBFOLDERS, _includeSubfolders);
+            });
+            box.Add(subfoldersToggle);
 
-            // Action buttons
-            EditorGUILayout.BeginHorizontal();
+            // Filter Extension
+            var filterExtensionField = new TextField("Filter Extension (optional)") { value = _filterByExtension };
+            filterExtensionField.RegisterValueChangedCallback(e =>
+            {
+                _filterByExtension = e.newValue;
+                EditorPrefs.SetString(PREF_KEY_FILTER_BY_EXTENSION, _filterByExtension);
+            });
+            box.Add(filterExtensionField);
+
+            var filterHelp = new HelpBox("Leave empty for all types, or enter like: .png, .prefab, .asset", HelpBoxMessageType.None);
+            box.Add(filterHelp);
+
+            // Buttons Row
+            var buttonRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 10 } };
             
-            if (GUILayout.Button("Load Selected Assets", GUILayout.Height(30)))
+            var loadBtn = new Button(() =>
             {
+                Debug.Log("[AssetNameModifier] Loading assets from folder...");
                 LoadAssetsFromFolder();
-            }
-
-            if (GUILayout.Button("Clear List", GUILayout.Height(30)))
+                RefreshListUI();
+            })
             {
+                text = "Load Selected Assets",
+                style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
+            };
+            buttonRow.Add(loadBtn);
+
+            var clearListBtn = new Button(() =>
+            {
+                Debug.Log("[AssetNameModifier] Clearing loaded asset list.");
                 _assetsInFolder.Clear();
+                RefreshListUI();
+            })
+            {
+                text = "Clear List",
+                style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
+            };
+            buttonRow.Add(clearListBtn);
+            
+            box.Add(buttonRow);
+
+            // Dynamic list header
+            var listHeader = new Label("Assets to Rename") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10 } };
+            box.Add(listHeader);
+
+            // Scroll View for dynamic asset list
+            var scroll = new ScrollView { style = { maxHeight = 250, minHeight = 100, marginTop = 5 } };
+            _listContainer = new VisualElement();
+            scroll.Add(_listContainer);
+            box.Add(scroll);
+
+            // Apply Button
+            _applyBtn = new Button(() =>
+            {
+                Debug.Log("[AssetNameModifier] Applying batch rename...");
+                PerformBatchRenameWithUndo();
+                RefreshListUI();
+            })
+            {
+                text = "APPLY BATCH RENAME",
+                style = { height = 40, unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10 }
+            };
+            box.Add(_applyBtn);
+
+            RefreshListUI();
+
+            return box;
+        }
+
+        private void RefreshListUI()
+        {
+            if (_listContainer == null) return;
+            
+            _listContainer.Clear();
+
+            if (_assetsInFolder.Count == 0)
+            {
+                var noAssetsLabel = new Label("No assets loaded. Select folder/assets and click Load Selected Assets.")
+                {
+                    style = { unityFontStyleAndWeight = FontStyle.Italic, color = Color.gray, marginTop = 10, marginBottom = 10, unityTextAlign = TextAnchor.MiddleCenter }
+                };
+                _listContainer.Add(noAssetsLabel);
+                
+                if (_applyBtn != null) _applyBtn.style.display = DisplayStyle.None;
+                return;
             }
 
-            EditorGUILayout.EndHorizontal();
+            if (_applyBtn != null) _applyBtn.style.display = DisplayStyle.Flex;
 
-            EditorGUILayout.Space(10);
-
-            // Asset list display
-            if (_assetsInFolder.Count > 0)
+            for (int i = 0; i < _assetsInFolder.Count; i++)
             {
-                GUILayout.Label($"Assets to Rename ({_assetsInFolder.Count})", EditorStyles.boldLabel);
-                
-                _scrollPosAssetList = EditorGUILayout.BeginScrollView(_scrollPosAssetList, GUILayout.Height(200));
-                
-                for (int i = 0; i < _assetsInFolder.Count; i++)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    
-                    string currentName = _assetsInFolder[i] != null ? _assetsInFolder[i].name : "NULL";
-                    string extension = Path.GetExtension(AssetDatabase.GetAssetPath(_assetsInFolder[i]));
-                    string newName = _baseNamePrefix + string.Format(_suffixFormat, _startIndex + i);
-                    
-                    EditorGUILayout.LabelField($"[{i}]", GUILayout.Width(30));
-                    EditorGUILayout.LabelField(currentName, GUILayout.Width(120));
-                    EditorGUILayout.LabelField("→", GUILayout.Width(20));
-                    EditorGUILayout.LabelField(newName + extension, GUILayout.Width(150));
-                    
-                    if (GUILayout.Button("X", GUILayout.Width(25)))
-                    {
-                        RemoveAssetFromListWithUndo(i);
-                    }
-                    
-                    EditorGUILayout.EndHorizontal();
-                }
-                
-                EditorGUILayout.EndScrollView();
+                int index = i;
+                var obj = _assetsInFolder[i];
+                if (obj == null) continue;
 
-                EditorGUILayout.Space(10);
+                var row = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2, alignItems = Align.Center } };
 
-                if (GUILayout.Button("APPLY BATCH RENAME", _centeredButtonStyle, GUILayout.Height(40)))
+                string currentName = obj.name;
+                string extension = Path.GetExtension(AssetDatabase.GetAssetPath(obj));
+                string newName = "Invalid Format";
+                try
                 {
-                    PerformBatchRenameWithUndo();
+                    newName = _baseNamePrefix + string.Format(_suffixFormat, _startIndex + index);
                 }
+                catch (System.Exception)
+                {
+                    // Safe formatting fallback
+                }
+
+                var idxLabel = new Label($"[{index}]") { style = { width = 30 } };
+                row.Add(idxLabel);
+
+                var oldNameLabel = new Label(currentName) { style = { width = 120, unityTextOverflowPosition = TextOverflowPosition.End } };
+                row.Add(oldNameLabel);
+
+                var arrowLabel = new Label("→") { style = { width = 20, unityTextAlign = TextAnchor.MiddleCenter } };
+                row.Add(arrowLabel);
+
+                var newNameLabel = new Label(newName + extension) { style = { flexGrow = 1, unityFontStyleAndWeight = FontStyle.Bold } };
+                row.Add(newNameLabel);
+
+                var removeBtn = new Button(() => 
+                {
+                    Debug.Log($"[AssetNameModifier] Removing asset at index {index} from list.");
+                    RemoveAssetFromListWithUndo(index);
+                    RefreshListUI();
+                }) 
+                { 
+                    text = "✕", 
+                    style = { width = 25 } 
+                };
+                row.Add(removeBtn);
+
+                _listContainer.Add(row);
             }
         }
         #endregion
@@ -246,6 +439,7 @@ namespace NamPhuThuy.Common
         {
             if (_assetA == null || _assetB == null)
             {
+                Debug.LogError("[AssetNameModifier] Asset A or Asset B is null!");
                 EditorUtility.DisplayDialog("Error", "Please assign both assets!", "OK");
                 return;
             }
@@ -254,6 +448,7 @@ namespace NamPhuThuy.Common
             Undo.SetCurrentGroupName("Swap Asset Names");
             int undoGroup = Undo.GetCurrentGroup();
 
+            Debug.Log($"[AssetNameModifier] Attempting to swap asset names: {_assetA.name} ↔ {_assetB.name}");
             SwapAssetNames(_assetA, _assetB);
 
             Undo.CollapseUndoOperations(undoGroup);
@@ -261,17 +456,25 @@ namespace NamPhuThuy.Common
 
         private void SwapAssetNames(Object a, Object b)
         {
+            if (a == null || b == null)
+            {
+                Debug.LogError("[AssetNameModifier] Assets are null in SwapAssetNames!");
+                return;
+            }
+
             string pathA = AssetDatabase.GetAssetPath(a);
             string pathB = AssetDatabase.GetAssetPath(b);
 
             if (string.IsNullOrEmpty(pathA) || string.IsNullOrEmpty(pathB))
             {
+                Debug.LogError($"[AssetNameModifier] Invalid paths. Path A: {pathA}, Path B: {pathB}");
                 EditorUtility.DisplayDialog("Error", "Invalid asset paths.", "OK");
                 return;
             }
 
             if (pathA == pathB)
             {
+                Debug.LogError($"[AssetNameModifier] Selected identical asset twice: {pathA}");
                 EditorUtility.DisplayDialog("Error", "You selected the same asset twice.", "OK");
                 return;
             }
@@ -286,22 +489,27 @@ namespace NamPhuThuy.Common
 
             try
             {
+                Debug.Log($"[AssetNameModifier] Step 1: Rename '{nameA}' to temp '{tempName}'");
                 var err1 = AssetDatabase.RenameAsset(pathA, tempName);
                 if (!string.IsNullOrEmpty(err1)) throw new System.Exception(err1);
 
+                Debug.Log($"[AssetNameModifier] Step 2: Rename '{nameB}' to '{nameA}'");
                 var err2 = AssetDatabase.RenameAsset(pathB, nameA);
                 if (!string.IsNullOrEmpty(err2)) throw new System.Exception(err2);
 
+                Debug.Log($"[AssetNameModifier] Step 3: Rename temp '{tempName}' to '{nameB}'");
                 var err3 = AssetDatabase.RenameAsset(tempPath, nameB);
                 if (!string.IsNullOrEmpty(err3)) throw new System.Exception(err3);
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
+                Debug.Log("[AssetNameModifier] Swap successful!");
                 EditorUtility.DisplayDialog("Success", $"Swapped '{nameA}' ↔ '{nameB}'", "OK");
             }
             catch (System.Exception ex)
             {
+                Debug.LogError($"[AssetNameModifier] Failed to swap names: {ex.Message}");
                 EditorUtility.DisplayDialog("Error", "Failed to swap: " + ex.Message, "OK");
             }
         }
@@ -312,6 +520,7 @@ namespace NamPhuThuy.Common
 
             if (selection.Length != 2)
             {
+                Debug.LogWarning("[AssetNameModifier] Please select exactly 2 assets in the Project window.");
                 EditorUtility.DisplayDialog("Invalid Selection", 
                     "Please select exactly 2 assets in the Project window.", "OK");
                 return;
@@ -322,6 +531,7 @@ namespace NamPhuThuy.Common
 
             if (string.IsNullOrEmpty(pathA) || string.IsNullOrEmpty(pathB) || pathA == pathB)
             {
+                Debug.LogError("[AssetNameModifier] Invalid selection path.");
                 EditorUtility.DisplayDialog("Error", 
                     "Invalid selection. Please select two different project assets.", "OK");
                 return;
@@ -329,6 +539,7 @@ namespace NamPhuThuy.Common
 
             _assetA = selection[0];
             _assetB = selection[1];
+            Debug.Log($"[AssetNameModifier] Assigned Asset A: {_assetA.name}, Asset B: {_assetB.name}");
         }
         #endregion
 
@@ -337,6 +548,7 @@ namespace NamPhuThuy.Common
         {
             if (_targetFolder == null)
             {
+                Debug.LogError("[AssetNameModifier] Please assign a target folder!");
                 EditorUtility.DisplayDialog("Error", "Please assign a target folder!", "OK");
                 return;
             }
@@ -345,6 +557,7 @@ namespace NamPhuThuy.Common
             
             if (!AssetDatabase.IsValidFolder(folderPath))
             {
+                Debug.LogError($"[AssetNameModifier] Selected object is not a folder: {folderPath}");
                 EditorUtility.DisplayDialog("Error", "Selected object is not a folder!", "OK");
                 return;
             }
@@ -352,14 +565,13 @@ namespace NamPhuThuy.Common
             _assetsInFolder.Clear();
             
             var selectedObjects = Selection.objects;
+            Debug.Log($"[AssetNameModifier] Scanning {selectedObjects.Length} selected objects for folder path: {folderPath}");
             foreach (var obj in selectedObjects)
             {
-                // Optional: keep only asset types you care about
-                // if (obj is not GameObject && obj is not Sprite && obj is not Texture2D) continue;
                 var path = AssetDatabase.GetAssetPath(obj);
                 if (string.IsNullOrEmpty(path))
                 {
-                    Debug.LogWarning(message: $"Cant find {obj.name}");
+                    Debug.LogWarning($"[AssetNameModifier] Can't find asset path for: {obj.name}");
                     continue; 
                 }
 
@@ -368,52 +580,15 @@ namespace NamPhuThuy.Common
                     _assetsInFolder.Add(obj);
                 }
             }
-                
-            // Refresh list after changes
-            // _reorderableList.list = _assetList;
 
-            /*string[] guids;
-            if (_includeSubfolders)
-            {
-                guids = AssetDatabase.FindAssets("", new[] { folderPath });
-            }
-            else
-            {
-                guids = AssetDatabase.FindAssets("", new[] { folderPath })
-                    .Where(guid => Path.GetDirectoryName(AssetDatabase.GUIDToAssetPath(guid)) == folderPath)
-                    .ToArray();
-            }
-
-            foreach (string guid in guids)
-            {
-                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                
-                // Skip folders
-                if (AssetDatabase.IsValidFolder(assetPath))
-                    continue;
-
-                // Apply extension filter if specified
-                if (!string.IsNullOrEmpty(_filterByExtension))
-                {
-                    string ext = Path.GetExtension(assetPath);
-                    if (!ext.Equals(_filterByExtension, System.StringComparison.OrdinalIgnoreCase))
-                        continue;
-                }
-
-                Object asset = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
-                if (asset != null)
-                {
-                    _assetsInFolder.Add(asset);
-                }
-            }*/
-
-            Debug.Log($"Loaded {_assetsInFolder.Count} assets from folder: {folderPath}");
+            Debug.Log($"[AssetNameModifier] Loaded {_assetsInFolder.Count} assets.");
         }
 
         private void PerformBatchRenameWithUndo()
         {
             if (_assetsInFolder.Count == 0)
             {
+                Debug.LogError("[AssetNameModifier] No assets to rename!");
                 EditorUtility.DisplayDialog("Error", "No assets to rename!", "OK");
                 return;
             }
@@ -439,7 +614,17 @@ namespace NamPhuThuy.Common
 
                 string assetPath = AssetDatabase.GetAssetPath(_assetsInFolder[i]);
                 string extension = Path.GetExtension(assetPath);
-                string newName = _baseNamePrefix + string.Format(_suffixFormat, _startIndex + i);
+                string newName = "Invalid Format";
+                try
+                {
+                    newName = _baseNamePrefix + string.Format(_suffixFormat, _startIndex + i);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[AssetNameModifier] Suffix formatting error: {ex.Message}");
+                    failCount++;
+                    continue;
+                }
 
                 try
                 {
@@ -450,13 +635,13 @@ namespace NamPhuThuy.Common
                     }
                     else
                     {
-                        Debug.LogError($"Failed to rename {_assetsInFolder[i].name}: {error}");
+                        Debug.LogError($"[AssetNameModifier] Failed to rename {_assetsInFolder[i].name}: {error}");
                         failCount++;
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"Exception renaming {_assetsInFolder[i].name}: {ex.Message}");
+                    Debug.LogError($"[AssetNameModifier] Exception renaming {_assetsInFolder[i].name}: {ex.Message}");
                     failCount++;
                 }
             }
@@ -466,12 +651,12 @@ namespace NamPhuThuy.Common
 
             Undo.CollapseUndoOperations(undoGroup);
 
+            Debug.Log($"[AssetNameModifier] Batch rename complete. Successes: {successCount}, Failures: {failCount}");
             EditorUtility.DisplayDialog(
                 "Batch Rename Complete",
                 $"Successfully renamed: {successCount}\nFailed: {failCount}",
                 "OK");
 
-            // Refresh the list
             _assetsInFolder.Clear();
         }
 

@@ -1,18 +1,26 @@
+// ───────────────────────────────────────────────────────────────────────
+// RULES:
+// 1. PROCESS: Use Debug.Log for trace steps.
+// 2. SAFETY: Use Debug.LogError in null/boundary checks.
+// ───────────────────────────────────────────────────────────────────────
+
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditor.Build;
 using UnityEditorInternal;
 #endif
 
-namespace NamPhuThuy
+namespace NamPhuThuy.Common
 {
 #if UNITY_EDITOR
-    public class ConstGenerator : EditorWindow
+    public class Window_ConstGenerator : EditorWindow
     {
         #region Private Fields
         // Preferences (stored in EditorPrefs)
@@ -21,23 +29,14 @@ namespace NamPhuThuy
 
         private string _namespace;
         private string _outFolder;
-        
-        private string _newLayerNames = "";
-        private string _newTagNames = "";
-        private string _newSortingLayerNames = "";
-        private string _newScriptingDefines = "";
-
-        private Vector2 _scrollPos;
-        private GUIStyle _centeredButtonStyle;
-        private GUIStyle _centeredLabelStyle;
         #endregion
 
         #region Menu Item
         [MenuItem("NamPhuThuy/Common/Window - Const Generator")]
         public static void ShowWindow()
         {
-            var window = GetWindow<ConstGenerator>("Const Generator");
-            window.minSize = new Vector2(520, 480);
+            var window = GetWindow<Window_ConstGenerator>("Const Generator");
+            window.minSize = new Vector2(520, 600);
             window.Show();
         }
         #endregion
@@ -45,168 +44,54 @@ namespace NamPhuThuy
         #region Unity Callbacks
         private void OnEnable()
         {
+            Debug.Log("[ConstGenerator] OnEnable");
             _namespace = EditorPrefs.GetString(PrefNamespace, "NamPhuThuy.Common");
             _outFolder = EditorPrefs.GetString(PrefOutFolder, "Assets/_Project");
         }
 
         private void OnDisable()
         {
-            // Cleanup when window closes
+            Debug.Log("[ConstGenerator] OnDisable");
+            EditorPrefs.SetString(PrefNamespace, _namespace);
+            EditorPrefs.SetString(PrefOutFolder, _outFolder);
         }
 
-        private void OnGUI()
+        public void CreateGUI()
         {
-            InitializeStyles();
+            Debug.Log("[ConstGenerator] CreateGUI");
+            var root = rootVisualElement;
+            root.style.paddingLeft = 20;
+            root.style.paddingRight = 20;
+            root.style.paddingTop = 20;
+            root.style.paddingBottom = 20;
 
-            float padding = 20f;
-            Rect areaRect = new Rect(padding, padding, position.width - 2 * padding, position.height - 2 * padding);
-
-            GUILayout.BeginArea(areaRect);
-            
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-
-            DrawHeader();
-            GUILayout.Space(10);
-            DrawContent();
-            GUILayout.Space(10);
-            DrawButtons();
-
-            EditorGUILayout.EndScrollView();
-            
-            GUILayout.EndArea();
-        }
-        #endregion
-
-        #region Initialization
-        private void InitializeStyles()
-        {
-            if (_centeredButtonStyle == null)
+            // ── Header Section ──
+            var header = new Label("Constants Generator")
             {
-                _centeredButtonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 14,
-                    fontStyle = FontStyle.Bold
-                };
-            }
+                style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 10 }
+            };
+            root.Add(header);
 
-            if (_centeredLabelStyle == null)
-            {
-                _centeredLabelStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 16
-                };
-            }
-        }
-
-        private void DrawHeader()
-        {
-            GUILayout.Label("Constants Generator", _centeredLabelStyle);
-            EditorGUILayout.HelpBox(
+            var helpBox = new HelpBox(
                 "Tip: Use these constants to avoid string-typos and magic numbers. " +
                 "Edit namespace/output to fit your project. Re-run after you change layers/tags/scenes/defines.",
-                MessageType.Info);
-        }
+                HelpBoxMessageType.Info);
+            root.Add(helpBox);
 
-        private void DrawContent()
-        {
-            // Settings Section
-            GUILayout.Label("Settings", EditorStyles.boldLabel);
-            using (new EditorGUILayout.VerticalScope("box"))
+            var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1, marginTop = 10 } };
+            root.Add(mainScroll);
+
+            // ── Content Sections ──
+            mainScroll.Add(BuildSettingsSection());
+            mainScroll.Add(BuildAddToProjectSection());
+            mainScroll.Add(BuildGeneratorsSection());
+
+            // ── Footer Buttons ──
+            var buttonRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 10 } };
+            
+            var generateAllBtn = new Button(() =>
             {
-                EditorGUI.BeginChangeCheck();
-                _namespace = EditorGUILayout.TextField(new GUIContent("Namespace"), _namespace);
-                
-                EditorGUILayout.BeginHorizontal();
-                var folderObj = AssetDatabase.LoadAssetAtPath<DefaultAsset>(_outFolder);
-                var newFolderObj = (DefaultAsset)EditorGUILayout.ObjectField(
-                    new GUIContent("Output Folder"), 
-                    folderObj, 
-                    typeof(DefaultAsset), 
-                    false);
-
-                if (newFolderObj != folderObj && newFolderObj != null)
-                {
-                    string path = AssetDatabase.GetAssetPath(newFolderObj);
-                    if (AssetDatabase.IsValidFolder(path))
-                    {
-                        _outFolder = path; // store as "Assets/..." relative path
-                    }
-                }
-
-                if (GUILayout.Button("Reset", GUILayout.Width(60)))
-                {
-                    _outFolder = "Assets/Scripts/Generated";
-                }
-                EditorGUILayout.EndHorizontal();
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    EditorPrefs.SetString(PrefNamespace, _namespace);
-                    EditorPrefs.SetString(PrefOutFolder, _outFolder);
-                }
-
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Open Output Folder"))
-                {
-                    var abs = MakeFolder(_outFolder);
-                    EditorUtility.RevealInFinder(abs);
-                }
-                if (GUILayout.Button("Go to Script"))
-                {
-                    var script = MonoScript.FromScriptableObject(this);
-                    if (script != null)
-                    {
-                        EditorGUIUtility.PingObject(script);
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-
-            GUILayout.Space(12);
-
-            // Add new items feature
-            GUILayout.Label("Add to Project (comma-separated)", EditorStyles.boldLabel);
-            using (new EditorGUILayout.VerticalScope("box"))
-            {
-                EditorGUILayout.BeginHorizontal();
-                _newLayerNames = EditorGUILayout.TextField("Layers", _newLayerNames);
-                if (GUILayout.Button("Add", GUILayout.Width(80))) AddNewLayers(_newLayerNames);
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                _newTagNames = EditorGUILayout.TextField("Tags", _newTagNames);
-                if (GUILayout.Button("Add", GUILayout.Width(80))) AddNewTags(_newTagNames);
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                _newSortingLayerNames = EditorGUILayout.TextField("Sorting Layers", _newSortingLayerNames);
-                if (GUILayout.Button("Add", GUILayout.Width(80))) AddNewSortingLayers(_newSortingLayerNames);
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                _newScriptingDefines = EditorGUILayout.TextField("Scripting Defines", _newScriptingDefines);
-                if (GUILayout.Button("Add", GUILayout.Width(80))) AddNewScriptingDefines(_newScriptingDefines);
-                EditorGUILayout.EndHorizontal();
-            }
-
-            GUILayout.Space(12);
-
-            // Individual Generators
-            GUILayout.Label("Generators", EditorStyles.boldLabel);
-            DrawSection("Layers", GenerateLayers);
-            DrawSection("Tags", GenerateTags);
-            DrawSection("Sorting Layers", GenerateSortingLayers);
-            DrawSection("Scenes (Build Settings)", GenerateScenes);
-            DrawSection("Scripting Define Symbols", GenerateScriptingDefines);
-        }
-
-        private void DrawButtons()
-        {
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Generate All", _centeredButtonStyle, GUILayout.Height(30)))
-            {
+                Debug.Log("[ConstGenerator] Generating all constants...");
                 GenerateLayers();
                 GenerateTags();
                 GenerateSortingLayers();
@@ -214,38 +99,269 @@ namespace NamPhuThuy
                 GenerateScriptingDefines();
                 AssetDatabase.Refresh();
                 EditorUtility.DisplayDialog("Const Generator", "Generated all constant files.", "OK");
-            }
+            }) 
+            { 
+                text = "Generate All", 
+                style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold } 
+            };
+            buttonRow.Add(generateAllBtn);
 
-            if (GUILayout.Button("Refresh Assets", _centeredButtonStyle, GUILayout.Height(30)))
+            var refreshBtn = new Button(() => 
             {
+                Debug.Log("[ConstGenerator] Refreshing assets...");
                 AssetDatabase.Refresh();
-            }
-            GUILayout.EndHorizontal();
+            }) 
+            { 
+                text = "Refresh Assets", 
+                style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold } 
+            };
+            buttonRow.Add(refreshBtn);
+
+            root.Add(buttonRow);
+        }
+        #endregion
+
+        #region UI Builders
+        /// <summary>
+        /// Creates a reusable box style for visually grouping elements
+        /// </summary>
+        private VisualElement BuildBox()
+        {
+            var box = new VisualElement();
+            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
+            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
+            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
+            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
+            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
+            box.style.marginBottom = 10;
+            return box;
+        }
+
+        private VisualElement BuildSettingsSection()
+        {
+            var box = BuildBox();
+
+            var title = new Label("Settings") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
+            box.Add(title);
+
+            // Namespace Field
+            var namespaceField = new TextField("Namespace") { value = _namespace };
+            namespaceField.RegisterValueChangedCallback(e =>
+            {
+                _namespace = e.newValue;
+                EditorPrefs.SetString(PrefNamespace, _namespace);
+            });
+            box.Add(namespaceField);
+
+            // Output Folder Row (ObjectField + Reset button)
+            var folderRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5 } };
+            
+            var folderField = new ObjectField("Output Folder")
+            {
+                objectType = typeof(DefaultAsset),
+                value = AssetDatabase.LoadAssetAtPath<DefaultAsset>(_outFolder),
+                style = { flexGrow = 1 }
+            };
+            folderField.RegisterValueChangedCallback(e =>
+            {
+                if (e.newValue != null)
+                {
+                    string path = AssetDatabase.GetAssetPath(e.newValue);
+                    if (AssetDatabase.IsValidFolder(path))
+                    {
+                        _outFolder = path;
+                        EditorPrefs.SetString(PrefOutFolder, _outFolder);
+                    }
+                    else
+                    {
+                        Debug.LogError($"[ConstGenerator] Invalid folder selected: {path}");
+                    }
+                }
+            });
+            folderRow.Add(folderField);
+
+            var resetBtn = new Button(() =>
+            {
+                _outFolder = "Assets/Scripts/Generated";
+                folderField.value = AssetDatabase.LoadAssetAtPath<DefaultAsset>(_outFolder);
+                EditorPrefs.SetString(PrefOutFolder, _outFolder);
+            }) 
+            { 
+                text = "Reset", 
+                style = { width = 60 } 
+            };
+            folderRow.Add(resetBtn);
+            box.Add(folderRow);
+
+            // Action Buttons Row
+            var actionRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5 } };
+            
+            var openFolderBtn = new Button(() =>
+            {
+                var abs = MakeFolder(_outFolder);
+                EditorUtility.RevealInFinder(abs);
+            }) 
+            { 
+                text = "Open Output Folder", 
+                style = { flexGrow = 1 } 
+            };
+            actionRow.Add(openFolderBtn);
+
+            var goToScriptBtn = new Button(() =>
+            {
+                var script = MonoScript.FromScriptableObject(this);
+                if (script != null)
+                {
+                    EditorGUIUtility.PingObject(script);
+                }
+                else
+                {
+                    Debug.LogError("[ConstGenerator] Could not find script object.");
+                }
+            }) 
+            { 
+                text = "Go to Script", 
+                style = { flexGrow = 1 } 
+            };
+            actionRow.Add(goToScriptBtn);
+            
+            box.Add(actionRow);
+
+            return box;
+        }
+
+        private VisualElement BuildAddToProjectSection()
+        {
+            var box = BuildBox();
+
+            var title = new Label("Add to Project (comma-separated)") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
+            box.Add(title);
+
+            // Layers
+            var layersRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
+            var layersField = new TextField("Layers") { style = { flexGrow = 1 } };
+            var addLayersBtn = new Button(() =>
+            {
+                AddNewLayers(layersField.value);
+                layersField.value = "";
+            }) { text = "Add", style = { width = 80 } };
+            layersRow.Add(layersField);
+            layersRow.Add(addLayersBtn);
+            box.Add(layersRow);
+
+            // Tags
+            var tagsRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
+            var tagsField = new TextField("Tags") { style = { flexGrow = 1 } };
+            var addTagsBtn = new Button(() =>
+            {
+                AddNewTags(tagsField.value);
+                tagsField.value = "";
+            }) { text = "Add", style = { width = 80 } };
+            tagsRow.Add(tagsField);
+            tagsRow.Add(addTagsBtn);
+            box.Add(tagsRow);
+
+            // Sorting Layers
+            var sortingRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
+            var sortingField = new TextField("Sorting Layers") { style = { flexGrow = 1 } };
+            var addSortingBtn = new Button(() =>
+            {
+                AddNewSortingLayers(sortingField.value);
+                sortingField.value = "";
+            }) { text = "Add", style = { width = 80 } };
+            sortingRow.Add(sortingField);
+            sortingRow.Add(addSortingBtn);
+            box.Add(sortingRow);
+
+            // Scripting Defines
+            var definesRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
+            var definesField = new TextField("Scripting Defines") { style = { flexGrow = 1 } };
+            var addDefinesBtn = new Button(() =>
+            {
+                AddNewScriptingDefines(definesField.value);
+                definesField.value = "";
+            }) { text = "Add", style = { width = 80 } };
+            definesRow.Add(definesField);
+            definesRow.Add(addDefinesBtn);
+            box.Add(definesRow);
+
+            return box;
+        }
+
+        private VisualElement BuildGeneratorsSection()
+        {
+            var box = BuildBox();
+
+            var title = new Label("Generators") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
+            box.Add(title);
+
+            box.Add(BuildGeneratorRow("Layers", GenerateLayers));
+            box.Add(BuildGeneratorRow("Tags", GenerateTags));
+            box.Add(BuildGeneratorRow("Sorting Layers", GenerateSortingLayers));
+            box.Add(BuildGeneratorRow("Scenes (Build Settings)", GenerateScenes));
+            box.Add(BuildGeneratorRow("Scripting Define Symbols", GenerateScriptingDefines));
+
+            return box;
+        }
+
+        private VisualElement BuildGeneratorRow(string currentTitle, System.Action gen)
+        {
+            var rowBox = new VisualElement();
+            rowBox.style.borderTopWidth = 1; rowBox.style.borderBottomWidth = 1; rowBox.style.borderLeftWidth = 1; rowBox.style.borderRightWidth = 1;
+            rowBox.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); rowBox.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            rowBox.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); rowBox.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+            rowBox.style.borderTopLeftRadius = 3; rowBox.style.borderTopRightRadius = 3;
+            rowBox.style.borderBottomLeftRadius = 3; rowBox.style.borderBottomRightRadius = 3;
+            rowBox.style.paddingLeft = 5; rowBox.style.paddingRight = 5; rowBox.style.paddingTop = 5; rowBox.style.paddingBottom = 5;
+            rowBox.style.backgroundColor = new Color(0.18f, 0.18f, 0.18f, 0.3f);
+            rowBox.style.marginBottom = 5;
+            rowBox.style.flexDirection = FlexDirection.Row;
+            rowBox.style.justifyContent = Justify.SpaceBetween;
+            rowBox.style.alignItems = Align.Center;
+
+            rowBox.Add(new Label(currentTitle));
+            
+            var btn = new Button(() =>
+            {
+                Debug.Log($"[ConstGenerator] Generating {currentTitle}...");
+                gen?.Invoke();
+                AssetDatabase.Refresh();
+            }) 
+            { 
+                text = "Generate", 
+                style = { width = 100 } 
+            };
+            rowBox.Add(btn);
+
+            return rowBox;
         }
         #endregion
 
         #region Private Methods
-        private void DrawSection(string currentTitle, System.Action gen)
-        {
-            using (new EditorGUILayout.VerticalScope("box"))
-            {
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Label(currentTitle);
-                if (GUILayout.Button($"Generate", GUILayout.Width(100)))
-                {
-                    gen?.Invoke();
-                    AssetDatabase.Refresh();
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-        }
-
         private void AddNewLayers(string layerNames)
         {
-            if (string.IsNullOrEmpty(layerNames)) return;
+            if (string.IsNullOrEmpty(layerNames))
+            {
+                Debug.LogWarning("[ConstGenerator] Layer names string is empty.");
+                return;
+            }
 
-            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var tagManagerAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (tagManagerAssets == null || tagManagerAssets.Length == 0)
+            {
+                Debug.LogError("[ConstGenerator] TagManager.asset not found!");
+                return;
+            }
+
+            SerializedObject tagManager = new SerializedObject(tagManagerAssets[0]);
             SerializedProperty layers = tagManager.FindProperty("layers");
+            if (layers == null)
+            {
+                Debug.LogError("[ConstGenerator] 'layers' property not found in TagManager.");
+                return;
+            }
             
             string[] names = layerNames.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;
@@ -280,7 +396,7 @@ namespace NamPhuThuy
                 }
                 if (!added)
                 {
-                    Debug.LogWarning($"Could not add layer '{layerName}'. All user layer slots are full!");
+                    Debug.LogWarning($"[ConstGenerator] Could not add layer '{layerName}'. All user layer slots are full!");
                 }
             }
 
@@ -288,7 +404,6 @@ namespace NamPhuThuy
             {
                 tagManager.ApplyModifiedProperties();
                 EditorUtility.DisplayDialog("Add Layers", $"Successfully added {addedCount} layers.", "OK");
-                _newLayerNames = "";
                 GUI.FocusControl(null);
             }
             else
@@ -299,10 +414,26 @@ namespace NamPhuThuy
 
         private void AddNewTags(string tagNames)
         {
-            if (string.IsNullOrEmpty(tagNames)) return;
+            if (string.IsNullOrEmpty(tagNames))
+            {
+                Debug.LogWarning("[ConstGenerator] Tag names string is empty.");
+                return;
+            }
 
-            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var tagManagerAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (tagManagerAssets == null || tagManagerAssets.Length == 0)
+            {
+                Debug.LogError("[ConstGenerator] TagManager.asset not found!");
+                return;
+            }
+
+            SerializedObject tagManager = new SerializedObject(tagManagerAssets[0]);
             SerializedProperty tags = tagManager.FindProperty("tags");
+            if (tags == null)
+            {
+                Debug.LogError("[ConstGenerator] 'tags' property not found in TagManager.");
+                return;
+            }
             
             string[] names = tagNames.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;
@@ -332,7 +463,6 @@ namespace NamPhuThuy
             {
                 tagManager.ApplyModifiedProperties();
                 EditorUtility.DisplayDialog("Add Tags", $"Successfully added {addedCount} tags.", "OK");
-                _newTagNames = "";
                 GUI.FocusControl(null);
             }
             else
@@ -343,10 +473,26 @@ namespace NamPhuThuy
 
         private void AddNewSortingLayers(string sortingLayerNames)
         {
-            if (string.IsNullOrEmpty(sortingLayerNames)) return;
+            if (string.IsNullOrEmpty(sortingLayerNames))
+            {
+                Debug.LogWarning("[ConstGenerator] Sorting layer names string is empty.");
+                return;
+            }
 
-            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var tagManagerAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (tagManagerAssets == null || tagManagerAssets.Length == 0)
+            {
+                Debug.LogError("[ConstGenerator] TagManager.asset not found!");
+                return;
+            }
+
+            SerializedObject tagManager = new SerializedObject(tagManagerAssets[0]);
             SerializedProperty sortingLayers = tagManager.FindProperty("m_SortingLayers");
+            if (sortingLayers == null)
+            {
+                Debug.LogError("[ConstGenerator] 'm_SortingLayers' property not found in TagManager.");
+                return;
+            }
             
             string[] names = sortingLayerNames.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;
@@ -385,7 +531,6 @@ namespace NamPhuThuy
             {
                 tagManager.ApplyModifiedProperties();
                 EditorUtility.DisplayDialog("Add Sorting Layers", $"Successfully added {addedCount} sorting layers.", "OK");
-                _newSortingLayerNames = "";
                 GUI.FocusControl(null);
             }
             else
@@ -396,7 +541,11 @@ namespace NamPhuThuy
 
         private void AddNewScriptingDefines(string definesString)
         {
-            if (string.IsNullOrEmpty(definesString)) return;
+            if (string.IsNullOrEmpty(definesString))
+            {
+                Debug.LogWarning("[ConstGenerator] Scripting defines string is empty.");
+                return;
+            }
 
             var group = EditorUserBuildSettings.selectedBuildTargetGroup;
 #if UNITY_2021_1_OR_NEWER
@@ -431,7 +580,6 @@ namespace NamPhuThuy
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(group, newDefinesStr);
 #endif
                 EditorUtility.DisplayDialog("Add Scripting Defines", $"Successfully added {addedCount} defines.", "OK");
-                _newScriptingDefines = "";
                 GUI.FocusControl(null);
             }
             else
@@ -598,6 +746,7 @@ namespace NamPhuThuy
             string absFolder = MakeFolder(_outFolder);
             string path = Path.Combine(absFolder, fileName);
             File.WriteAllText(path, content, Encoding.UTF8);
+            Debug.Log($"[ConstGenerator] Generated: {path}");
         }
 
         private static string MakeFolder(string projectRelative)
