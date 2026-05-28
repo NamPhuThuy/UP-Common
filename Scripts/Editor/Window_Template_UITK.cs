@@ -1,3 +1,9 @@
+// ───────────────────────────────────────────────────────────────────────
+// RULES:
+// 1. PROCESS: Use Debug.Log for trace steps.
+// 2. SAFETY: Use Debug.LogError in null/boundary checks.
+// ───────────────────────────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UIElements;
 #if UNITY_EDITOR
@@ -35,12 +41,14 @@ namespace NamPhuThuy.Common
         #region Unity Callbacks
         private void OnEnable()
         {
+            Debug.Log("[UITK Template] OnEnable");
             // Load persisted data when the window opens or after script reload
             _exampleText = EditorPrefs.GetString(PREF_KEY_EXAMPLE_TEXT_UITK, "Default Editable Value");
         }
 
         private void OnDisable()
         {
+            Debug.Log("[UITK Template] OnDisable");
             // Save data when window closes to persist across Unity sessions
             EditorPrefs.SetString(PREF_KEY_EXAMPLE_TEXT_UITK, _exampleText);
         }
@@ -48,6 +56,7 @@ namespace NamPhuThuy.Common
         // CreateGUI is the UITK equivalent of OnGUI, called once when window is opened
         public void CreateGUI()
         {
+            Debug.Log("[UITK Template] CreateGUI");
             var root = rootVisualElement;
             root.style.paddingLeft = 20;
             root.style.paddingRight = 20;
@@ -179,6 +188,8 @@ namespace NamPhuThuy.Common
         /// </summary>
         private void PerformExampleUndoableAction()
         {
+            Debug.Log("[UITK Template] Action Start");
+
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName("Template - Example Undoable Action");
             int undoGroup = Undo.GetCurrentGroup();
@@ -190,11 +201,17 @@ namespace NamPhuThuy.Common
             // Because UITK fields don't auto-update when the serialized property changes behind the scenes
             // unless heavily bound, we update the UI explicitly here.
             if (_exampleTextField != null)
+            {
                 _exampleTextField.SetValueWithoutNotify(_exampleText);
+            }
+            else
+            {
+                Debug.LogError("[UITK Template] Null Text Field!");
+            }
 
             Undo.CollapseUndoOperations(undoGroup);
 
-            Debug.Log("Performed example undoable action from WindowTemplate_UITK.");
+            Debug.Log("[UITK Template] Action Done");
         }
         #endregion
     }
