@@ -5,6 +5,7 @@
 // ───────────────────────────────────────────────────────────────────────
 
 using System.IO;
+using NamPhuThuy.Common;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
@@ -72,10 +73,7 @@ namespace NamPhuThuy.Common
             };
             root.Add(header);
 
-            var helpBox = new HelpBox(
-                "Tip: Use these constants to avoid string-typos and magic numbers. " +
-                "Edit namespace/output to fit your project. Re-run after you change layers/tags/scenes/defines.",
-                HelpBoxMessageType.Info);
+            var helpBox = new HelpBox("Generate constants for layers, tags, scenes, and defines.", HelpBoxMessageType.Info);
             root.Add(helpBox);
 
             var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1, marginTop = 10 } };
@@ -98,7 +96,7 @@ namespace NamPhuThuy.Common
                 GenerateScenes();
                 GenerateScriptingDefines();
                 AssetDatabase.Refresh();
-                EditorUtility.DisplayDialog("Const Generator", "Generated all constant files.", "OK");
+                Debug.Log("Done");
             }) 
             { 
                 text = "Generate All", 
@@ -112,7 +110,7 @@ namespace NamPhuThuy.Common
                 AssetDatabase.Refresh();
             }) 
             { 
-                text = "Refresh Assets", 
+                text = "Refresh", 
                 style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold } 
             };
             buttonRow.Add(refreshBtn);
@@ -125,26 +123,11 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Creates a reusable box style for visually grouping elements
         /// </summary>
-        private VisualElement BuildBox()
-        {
-            var box = new VisualElement();
-            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
-            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
-            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
-            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
-            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
-            box.style.marginBottom = 10;
-            return box;
-        }
+        
 
         private VisualElement BuildSettingsSection()
         {
-            var box = BuildBox();
-
-            var title = new Label("Settings") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
+            var box = UITKEditorHelper.BuildBox("Settings");
 
             // Namespace Field
             var namespaceField = new TextField("Namespace") { value = _namespace };
@@ -204,7 +187,7 @@ namespace NamPhuThuy.Common
                 EditorUtility.RevealInFinder(abs);
             }) 
             { 
-                text = "Open Output Folder", 
+                text = "Open Folder", 
                 style = { flexGrow = 1 } 
             };
             actionRow.Add(openFolderBtn);
@@ -234,10 +217,7 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildAddToProjectSection()
         {
-            var box = BuildBox();
-
-            var title = new Label("Add to Project (comma-separated)") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
+            var box = UITKEditorHelper.BuildBox("Add (comma-separated)");
 
             // Layers
             var layersRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
@@ -277,7 +257,7 @@ namespace NamPhuThuy.Common
 
             // Scripting Defines
             var definesRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
-            var definesField = new TextField("Scripting Defines") { style = { flexGrow = 1 } };
+            var definesField = new TextField("Defines") { style = { flexGrow = 1 } };
             var addDefinesBtn = new Button(() =>
             {
                 AddNewScriptingDefines(definesField.value);
@@ -292,10 +272,7 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildGeneratorsSection()
         {
-            var box = BuildBox();
-
-            var title = new Label("Generators") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
+            var box = UITKEditorHelper.BuildBox("Generators");
 
             box.Add(BuildGeneratorRow("Layers", GenerateLayers));
             box.Add(BuildGeneratorRow("Tags", GenerateTags));
@@ -403,12 +380,12 @@ namespace NamPhuThuy.Common
             if (addedCount > 0)
             {
                 tagManager.ApplyModifiedProperties();
-                EditorUtility.DisplayDialog("Add Layers", $"Successfully added {addedCount} layers.", "OK");
+                Debug.Log($"Added {addedCount} layers.");
                 GUI.FocusControl(null);
             }
             else
             {
-                EditorUtility.DisplayDialog("Add Layers", "No new layers were added (they might already exist or slots are full).", "OK");
+                Debug.Log("No new layers added.");
             }
         }
 
@@ -462,12 +439,12 @@ namespace NamPhuThuy.Common
             if (addedCount > 0)
             {
                 tagManager.ApplyModifiedProperties();
-                EditorUtility.DisplayDialog("Add Tags", $"Successfully added {addedCount} tags.", "OK");
+                Debug.Log($"Added {addedCount} tags.");
                 GUI.FocusControl(null);
             }
             else
             {
-                EditorUtility.DisplayDialog("Add Tags", "No new tags were added (they might already exist).", "OK");
+                Debug.Log("No new tags added.");
             }
         }
 
@@ -530,12 +507,12 @@ namespace NamPhuThuy.Common
             if (addedCount > 0)
             {
                 tagManager.ApplyModifiedProperties();
-                EditorUtility.DisplayDialog("Add Sorting Layers", $"Successfully added {addedCount} sorting layers.", "OK");
+                Debug.Log($"Added {addedCount} sorting layers.");
                 GUI.FocusControl(null);
             }
             else
             {
-                EditorUtility.DisplayDialog("Add Sorting Layers", "No new sorting layers were added (they might already exist).", "OK");
+                Debug.Log("No new sorting layers added.");
             }
         }
 
@@ -579,12 +556,12 @@ namespace NamPhuThuy.Common
 #else
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(group, newDefinesStr);
 #endif
-                EditorUtility.DisplayDialog("Add Scripting Defines", $"Successfully added {addedCount} defines.", "OK");
+                Debug.Log($"Added {addedCount} defines.");
                 GUI.FocusControl(null);
             }
             else
             {
-                EditorUtility.DisplayDialog("Add Scripting Defines", "No new defines were added (they might already exist).", "OK");
+                Debug.Log("No new defines added.");
             }
         }
 

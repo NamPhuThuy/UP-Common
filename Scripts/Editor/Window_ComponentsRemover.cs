@@ -1,22 +1,26 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.UIElements;
+#endif
 
 namespace NamPhuThuy.Common
 {
+#if UNITY_EDITOR
     public class Window_ComponentsRemover : EditorWindow
     {
         #region Enums
-        // Extend this enum with any components you often want to remove
-        private enum RemovableComponentType
+        public enum RemovableComponentType
         {
-            MESH_COLLIDER          = 0,
-            BOX_COLLIDER           = 1,
-            SPHERE_COLLIDER        = 2,
-            CAPSULE_COLLIDER       = 3,
+            NONE = 0,
+            MESH_COLLIDER          = 1,
+            BOX_COLLIDER           = 2,
+            SPHERE_COLLIDER        = 3,
+            CAPSULE_COLLIDER       = 4,
             BOX_COLLIDER_2D        = 10,
             CIRCLE_COLLIDER_2D     = 11,
             POLYGON_COLLIDER_2D    = 12,
@@ -29,21 +33,15 @@ namespace NamPhuThuy.Common
             LINE_RENDERER          = 33,
             CANVAS_RENDERER        = 34,
             AUDIO_SOURCE           = 40,
-            
         }
         #endregion
 
         #region Private Fields
-        private readonly List<GameObject> _targets = new List<GameObject>();
+        [SerializeField] private List<GameObject> _targets = new List<GameObject>();
+        [SerializeField] private bool _includeChildren = true;
+        [SerializeField] private RemovableComponentType _selectedComponentType = RemovableComponentType.MESH_COLLIDER;
 
-        private bool _includeChildren = true;
-        private RemovableComponentType _selectedComponentType = RemovableComponentType.MESH_COLLIDER;
-
-        private Vector2 _scrollPos;          // main scroll view
-        private Vector2 _scrollPosTargets;   // scroll for target list
-
-        private GUIStyle _centeredButtonStyle;
-        private GUIStyle _centeredLabelStyle;
+        private SerializedObject _serializedObject;
         #endregion
 
         #region Menu Item
@@ -59,183 +57,100 @@ namespace NamPhuThuy.Common
         #region Unity Callbacks
         private void OnEnable()
         {
-            // Initialize data when window opens (if needed)
+            _serializedObject = new SerializedObject(this);
         }
 
-        private void OnDisable()
+        public void CreateGUI()
         {
-            // Cleanup when window closes (if needed)
-        }
+            var root = rootVisualElement;
+            root.style.paddingLeft = 20;
+            root.style.paddingRight = 20;
+            root.style.paddingTop = 20;
+            root.style.paddingBottom = 20;
 
-        private void OnGUI()
-        {
-            InitializeStyles();
+            // Header Section
+            var header = new Label("Components Remover")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 10 }
+            };
+            root.Add(header);
 
-            float padding = 20f;
-            Rect areaRect = new Rect(
-                padding,
-                padding,
-                position.width - 2f * padding,
-                position.height - 2f * padding
-            );
+            var helpBox = new HelpBox("Remove components from targets.", HelpBoxMessageType.Info);
+            helpBox.style.marginBottom = 10;
+            root.Add(helpBox);
 
-            GUILayout.BeginArea(areaRect);
+            var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1 } };
+            root.Add(mainScroll);
 
-            // Main scroll view that wraps everything
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
+            // Options Section
+            mainScroll.Add(BuildOptionsSection());
 
-            DrawHeader();
-            GUILayout.Space(10);
-            DrawContent();
-            GUILayout.Space(10);
-            DrawButtons();
+            // Targets Section
+            mainScroll.Add(BuildTargetsSection());
 
-            EditorGUILayout.EndScrollView();
-
-            GUILayout.EndArea();
+            // Footer Section
+            root.Add(BuildFooterSection());
         }
         #endregion
 
-        #region UI Drawing
-        private void InitializeStyles()
+        #region UI Builders
+        private VisualElement BuildOptionsSection()
         {
-            if (_centeredButtonStyle == null)
-            {
-                _centeredButtonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 14,
-                    fontStyle = FontStyle.Bold
-                };
-            }
+            var box = UITKEditorHelper.BuildBox("Options");
 
-            if (_centeredLabelStyle == null)
+            var typeField = new EnumField("Type", _selectedComponentType);
+            typeField.Init(_selectedComponentType);
+            typeField.RegisterValueChangedCallback(evt =>
             {
-                _centeredLabelStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 16
-                };
-            }
+                _selectedComponentType = (RemovableComponentType)evt.newValue;
+            });
+            box.Add(typeField);
+
+            var childrenToggle = new Toggle("Children") { value = _includeChildren };
+            childrenToggle.RegisterValueChangedCallback(evt =>
+            {
+                _includeChildren = evt.newValue;
+            });
+            box.Add(childrenToggle);
+
+            return box;
         }
 
-        private void DrawHeader()
+        private VisualElement BuildTargetsSection()
         {
-            GUILayout.Label("Components Remover", _centeredLabelStyle);
-            EditorGUILayout.HelpBox(
-                "Manage a list of GameObjects and remove selected component type from them.\n" +
-                "Works for regular 2D/3D GameObjects, optionally including children.",
-                MessageType.Info
+            return UITKEditorHelper.BuildAssetListSection<GameObject>(
+                _serializedObject,
+                "_targets",
+                "Targets",
+                "GameObjects",
+                _targets,
+                () => {}
             );
         }
 
-        private void DrawContent()
+        private VisualElement BuildFooterSection()
         {
-            // Options section
-            GUILayout.Label("Options", _centeredLabelStyle);
+            var footer = new VisualElement { style = { marginTop = 10 } };
 
-            // Component type selection
-            _selectedComponentType = (RemovableComponentType)EditorGUILayout.EnumPopup(
-                "Component Type",
-                _selectedComponentType
-            );
-
-            _includeChildren = EditorGUILayout.Toggle("Include Children", _includeChildren);
-
-            GUILayout.Space(16);
-
-            // Targets section
-            GUILayout.Label("Targets", _centeredLabelStyle);
-
-            // Buttons for managing list
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Add Selection"))
+            var btnRemove = new Button(RemoveComponentsFromTargets)
             {
-                AddCurrentSelection();
-            }
+                text = "Remove",
+                style = { height = 30, unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 6 }
+            };
+            footer.Add(btnRemove);
 
-            if (GUILayout.Button("Clear All"))
+            var btnSelectChildren = new Button(SelectChildrenWithSelectedComponent)
             {
-                _targets.Clear();
-            }
-            EditorGUILayout.EndHorizontal();
+                text = "Select Children",
+                style = { height = 24, unityFontStyleAndWeight = FontStyle.Normal }
+            };
+            footer.Add(btnSelectChildren);
 
-            GUILayout.Space(8);
-
-            // Scrollable list of targets
-            _scrollPosTargets = EditorGUILayout.BeginScrollView(_scrollPosTargets, GUILayout.Height(350));
-
-            for (int i = _targets.Count - 1; i >= 0; i--)
-            {
-                EditorGUILayout.BeginHorizontal();
-
-                _targets[i] = (GameObject)EditorGUILayout.ObjectField(_targets[i], typeof(GameObject), true);
-
-                if (GUILayout.Button("X", GUILayout.Width(20f)))
-                {
-                    _targets.RemoveAt(i);
-                }
-
-                EditorGUILayout.EndHorizontal();
-            }
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        private void DrawButtons()
-        {
-            GUILayout.BeginHorizontal();
-
-            GUI.enabled = _targets.Count > 0;
-
-            if (GUILayout.Button("Remove Selected Components From Targets", _centeredButtonStyle, GUILayout.Height(30)))
-            {
-                RemoveComponentsFromTargets();
-            }
-
-            GUI.enabled = true;
-
-            GUILayout.EndHorizontal();
-            
-            
-            GUILayout.Space(6);
-
-            GUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("Select Children With Component", _centeredButtonStyle, GUILayout.Height(24)))
-            {
-                SelectChildrenWithSelectedComponent();
-            }
-
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
+            return footer;
         }
         #endregion
 
         #region Logic
-        private void AddCurrentSelection()
-        {
-            GameObject[] selectedObjects = Selection.gameObjects;
-
-            if (selectedObjects == null || selectedObjects.Length == 0)
-            {
-                Debug.LogWarning("No GameObjects selected to add.");
-                return;
-            }
-
-            int added = 0;
-            foreach (GameObject go in selectedObjects)
-            {
-                if (go == null) continue;
-                if (_targets.Contains(go)) continue;
-
-                _targets.Add(go);
-                added++;
-            }
-
-            Debug.Log($"Added {added} GameObject(s) to ComponentsRemover list.");
-        }
-
         private Type GetSelectedType()
         {
             switch (_selectedComponentType)
@@ -260,22 +175,22 @@ namespace NamPhuThuy.Common
 
         private void RemoveComponentsFromTargets()
         {
+            _serializedObject.Update();
             if (_targets.Count == 0)
             {
-                Debug.LogWarning("No targets to process.");
+                Debug.LogError("[ComponentsRemover] No targets assigned.");
                 return;
             }
 
             Type selectedType = GetSelectedType();
             if (selectedType == null)
             {
-                Debug.LogError("Unsupported component type selected.");
+                Debug.LogError("[ComponentsRemover] Unsupported type.");
                 return;
             }
 
             int removedCount = 0;
 
-            // Create a single undo group for all deletions
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName("Components Remover");
             int undoGroup = Undo.GetCurrentGroup();
@@ -298,17 +213,16 @@ namespace NamPhuThuy.Common
 
             Undo.CollapseUndoOperations(undoGroup);
 
-            Debug.Log($"Removed {removedCount} instance(s) of `{_selectedComponentType}` from targets.");
+            Debug.Log($"Removed: {removedCount}");
         }
-        
-        
-        // --- NEW: select all children that contain the currently selected component type
+
         private void SelectChildrenWithSelectedComponent()
         {
+            _serializedObject.Update();
             Type selectedType = GetSelectedType();
             if (selectedType == null)
             {
-                Debug.LogError("Unsupported component type selected.");
+                Debug.LogError("[ComponentsRemover] Unsupported type.");
                 return;
             }
 
@@ -316,18 +230,14 @@ namespace NamPhuThuy.Common
 
             if (result.Count == 0)
             {
-                Debug.Log($"No children with `{selectedType.Name}` found in targets.");
+                Debug.Log("Selected: 0");
                 return;
             }
 
             Selection.objects = result.ToArray();
-            Debug.Log($"Selected {result.Count} child GameObject(s) with `{selectedType.Name}`.");
+            Debug.Log($"Selected: {result.Count}");
         }
 
-        /// <summary>
-        /// Returns a list of all unique child GameObjects (including the targets themselves)
-        /// that contain at least one component of the given type.
-        /// </summary>
         private List<GameObject> GetChildrenWithSelectedComponent(Type componentType)
         {
             var collected = new List<GameObject>();
@@ -355,5 +265,5 @@ namespace NamPhuThuy.Common
         }
         #endregion
     }
-}
 #endif
+}

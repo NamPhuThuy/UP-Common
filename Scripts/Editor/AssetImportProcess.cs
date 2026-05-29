@@ -6,7 +6,7 @@ using UnityEditor;
 
 
 //automatically sets import presets based on asset format
-namespace NamPhuThuy
+namespace NamPhuThuy.Common
 {
     public class AssetImportProcess : AssetPostprocessor
     {

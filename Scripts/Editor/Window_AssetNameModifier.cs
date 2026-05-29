@@ -5,6 +5,7 @@
 // ───────────────────────────────────────────────────────────────────────
 
 using System.Collections.Generic;
+using NamPhuThuy.Common;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -48,7 +49,7 @@ namespace NamPhuThuy.Common
         #endregion
 
         #region Menu Item
-        [MenuItem("NamPhuThuy/Common/Window Asset Name Modifier")]
+        [MenuItem("NamPhuThuy/Common/Window - Asset Name Modifier")]
         public static void ShowWindow()
         {
             Window_AssetNameModifier window = GetWindow<Window_AssetNameModifier>("Asset Name Modifier");
@@ -105,16 +106,13 @@ namespace NamPhuThuy.Common
             root.style.paddingBottom = 20;
 
             // ── Header Section ──
-            var header = new Label("Asset Name Modifier")
+            var header = new Label("Name Modifier")
             {
                 style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 10 }
             };
             root.Add(header);
 
-            var helpBox = new HelpBox(
-                "Tool for swapping asset names and batch renaming assets in folders.\n" +
-                "Use Ctrl+Z to undo any rename operations.",
-                HelpBoxMessageType.Info);
+            var helpBox = new HelpBox("Swap/rename assets.", HelpBoxMessageType.Info);
             root.Add(helpBox);
 
             var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1, marginTop = 10 } };
@@ -130,28 +128,13 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Creates a reusable box style for visually grouping elements
         /// </summary>
-        private VisualElement BuildBox()
-        {
-            var box = new VisualElement();
-            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
-            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
-            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
-            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
-            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
-            box.style.marginBottom = 10;
-            return box;
-        }
+        
 
         private VisualElement BuildSwapSection()
         {
-            var box = BuildBox();
+            var box = UITKEditorHelper.BuildBox("Swap");
 
-            var title = new Label("Swap Asset Names") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
-
-            var desc = new HelpBox("Swap the file names of two selected assets.", HelpBoxMessageType.None);
+            var desc = new HelpBox("Swap names of two selected assets.", HelpBoxMessageType.None);
             box.Add(desc);
 
             var assetAField = new ObjectField("Asset A")
@@ -189,7 +172,7 @@ namespace NamPhuThuy.Common
                 assetBField.value = _assetB;
             })
             {
-                text = "Use Selected Assets",
+                text = "Use Selected",
                 style = { flexGrow = 1, height = 25 }
             };
             buttonRow.Add(useSelectedBtn);
@@ -211,7 +194,7 @@ namespace NamPhuThuy.Common
 
             var swapBtn = new Button(PerformSwapWithUndo)
             {
-                text = "SWAP NAMES",
+                text = "Swap",
                 style = { height = 35, unityFontStyleAndWeight = FontStyle.Bold, marginTop = 5 }
             };
             box.Add(swapBtn);
@@ -221,16 +204,13 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildBatchRenameSection()
         {
-            var box = BuildBox();
+            var box = UITKEditorHelper.BuildBox("Batch Rename");
 
-            var title = new Label("Batch Rename Assets") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
-
-            var desc = new HelpBox("Rename multiple assets in a folder with incremental suffixes.", HelpBoxMessageType.None);
+            var desc = new HelpBox("Rename assets incrementally.", HelpBoxMessageType.None);
             box.Add(desc);
 
             // Folder Field
-            var folderField = new ObjectField("Target Folder")
+            var folderField = new ObjectField("Folder")
             {
                 objectType = typeof(DefaultAsset),
                 value = _targetFolder
@@ -250,7 +230,7 @@ namespace NamPhuThuy.Common
             box.Add(folderField);
 
             // Base Name
-            var baseNameField = new TextField("Base Name") { value = _baseNamePrefix };
+            var baseNameField = new TextField("Base") { value = _baseNamePrefix };
             baseNameField.RegisterValueChangedCallback(e =>
             {
                 _baseNamePrefix = e.newValue;
@@ -260,7 +240,7 @@ namespace NamPhuThuy.Common
             box.Add(baseNameField);
 
             // Suffix Format
-            var suffixFormatField = new TextField("Suffix Format") { value = _suffixFormat };
+            var suffixFormatField = new TextField("Format") { value = _suffixFormat };
             suffixFormatField.RegisterValueChangedCallback(e =>
             {
                 _suffixFormat = e.newValue;
@@ -269,16 +249,11 @@ namespace NamPhuThuy.Common
             });
             box.Add(suffixFormatField);
 
-            var suffixHelp = new HelpBox(
-                "Suffix Format examples:\n" +
-                "• _{0:00} → _01, _02, _03...\n" +
-                "• _{0:000} → _001, _002, _003...\n" +
-                "• _{0} → _1, _2, _3...",
-                HelpBoxMessageType.None);
+            var suffixHelp = new HelpBox("Format: _{0:00} (e.g. _01), _{0} (e.g. _1)", HelpBoxMessageType.None);
             box.Add(suffixHelp);
 
             // Start Index
-            var startIndexField = new IntegerField("Start Index") { value = _startIndex };
+            var startIndexField = new IntegerField("Start") { value = _startIndex };
             startIndexField.RegisterValueChangedCallback(e =>
             {
                 _startIndex = e.newValue;
@@ -288,7 +263,7 @@ namespace NamPhuThuy.Common
             box.Add(startIndexField);
 
             // Include Subfolders Toggle
-            var subfoldersToggle = new Toggle("Include Subfolders") { value = _includeSubfolders };
+            var subfoldersToggle = new Toggle("Subfolders") { value = _includeSubfolders };
             subfoldersToggle.RegisterValueChangedCallback(e =>
             {
                 _includeSubfolders = e.newValue;
@@ -297,7 +272,7 @@ namespace NamPhuThuy.Common
             box.Add(subfoldersToggle);
 
             // Filter Extension
-            var filterExtensionField = new TextField("Filter Extension (optional)") { value = _filterByExtension };
+            var filterExtensionField = new TextField("Filter") { value = _filterByExtension };
             filterExtensionField.RegisterValueChangedCallback(e =>
             {
                 _filterByExtension = e.newValue;
@@ -305,7 +280,7 @@ namespace NamPhuThuy.Common
             });
             box.Add(filterExtensionField);
 
-            var filterHelp = new HelpBox("Leave empty for all types, or enter like: .png, .prefab, .asset", HelpBoxMessageType.None);
+            var filterHelp = new HelpBox(".png, .prefab, .asset (optional)", HelpBoxMessageType.None);
             box.Add(filterHelp);
 
             // Buttons Row
@@ -318,7 +293,7 @@ namespace NamPhuThuy.Common
                 RefreshListUI();
             })
             {
-                text = "Load Selected Assets",
+                text = "Load Selected",
                 style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
             };
             buttonRow.Add(loadBtn);
@@ -330,7 +305,7 @@ namespace NamPhuThuy.Common
                 RefreshListUI();
             })
             {
-                text = "Clear List",
+                text = "Clear",
                 style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
             };
             buttonRow.Add(clearListBtn);
@@ -338,7 +313,7 @@ namespace NamPhuThuy.Common
             box.Add(buttonRow);
 
             // Dynamic list header
-            var listHeader = new Label("Assets to Rename") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10 } };
+            var listHeader = new Label("Assets") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10 } };
             box.Add(listHeader);
 
             // Scroll View for dynamic asset list
@@ -355,7 +330,7 @@ namespace NamPhuThuy.Common
                 RefreshListUI();
             })
             {
-                text = "APPLY BATCH RENAME",
+                text = "Rename",
                 style = { height = 40, unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10 }
             };
             box.Add(_applyBtn);
@@ -373,7 +348,7 @@ namespace NamPhuThuy.Common
 
             if (_assetsInFolder.Count == 0)
             {
-                var noAssetsLabel = new Label("No assets loaded. Select folder/assets and click Load Selected Assets.")
+                var noAssetsLabel = new Label("No assets.")
                 {
                     style = { unityFontStyleAndWeight = FontStyle.Italic, color = Color.gray, marginTop = 10, marginBottom = 10, unityTextAlign = TextAnchor.MiddleCenter }
                 };
@@ -440,7 +415,6 @@ namespace NamPhuThuy.Common
             if (_assetA == null || _assetB == null)
             {
                 Debug.LogError("[AssetNameModifier] Asset A or Asset B is null!");
-                EditorUtility.DisplayDialog("Error", "Please assign both assets!", "OK");
                 return;
             }
 
@@ -468,14 +442,12 @@ namespace NamPhuThuy.Common
             if (string.IsNullOrEmpty(pathA) || string.IsNullOrEmpty(pathB))
             {
                 Debug.LogError($"[AssetNameModifier] Invalid paths. Path A: {pathA}, Path B: {pathB}");
-                EditorUtility.DisplayDialog("Error", "Invalid asset paths.", "OK");
                 return;
             }
 
             if (pathA == pathB)
             {
                 Debug.LogError($"[AssetNameModifier] Selected identical asset twice: {pathA}");
-                EditorUtility.DisplayDialog("Error", "You selected the same asset twice.", "OK");
                 return;
             }
 
@@ -504,13 +476,11 @@ namespace NamPhuThuy.Common
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
-                Debug.Log("[AssetNameModifier] Swap successful!");
-                EditorUtility.DisplayDialog("Success", $"Swapped '{nameA}' ↔ '{nameB}'", "OK");
+                Debug.Log($"Swapped: {nameA} <-> {nameB}");
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[AssetNameModifier] Failed to swap names: {ex.Message}");
-                EditorUtility.DisplayDialog("Error", "Failed to swap: " + ex.Message, "OK");
+                Debug.LogError($"[AssetNameModifier] Failed: {ex.Message}");
             }
         }
 
@@ -520,9 +490,7 @@ namespace NamPhuThuy.Common
 
             if (selection.Length != 2)
             {
-                Debug.LogWarning("[AssetNameModifier] Please select exactly 2 assets in the Project window.");
-                EditorUtility.DisplayDialog("Invalid Selection", 
-                    "Please select exactly 2 assets in the Project window.", "OK");
+                Debug.LogWarning("[AssetNameModifier] Select 2 assets.");
                 return;
             }
 
@@ -532,8 +500,6 @@ namespace NamPhuThuy.Common
             if (string.IsNullOrEmpty(pathA) || string.IsNullOrEmpty(pathB) || pathA == pathB)
             {
                 Debug.LogError("[AssetNameModifier] Invalid selection path.");
-                EditorUtility.DisplayDialog("Error", 
-                    "Invalid selection. Please select two different project assets.", "OK");
                 return;
             }
 
@@ -548,8 +514,7 @@ namespace NamPhuThuy.Common
         {
             if (_targetFolder == null)
             {
-                Debug.LogError("[AssetNameModifier] Please assign a target folder!");
-                EditorUtility.DisplayDialog("Error", "Please assign a target folder!", "OK");
+                Debug.LogError("[AssetNameModifier] No target folder.");
                 return;
             }
 
@@ -558,7 +523,6 @@ namespace NamPhuThuy.Common
             if (!AssetDatabase.IsValidFolder(folderPath))
             {
                 Debug.LogError($"[AssetNameModifier] Selected object is not a folder: {folderPath}");
-                EditorUtility.DisplayDialog("Error", "Selected object is not a folder!", "OK");
                 return;
             }
 
@@ -589,16 +553,10 @@ namespace NamPhuThuy.Common
             if (_assetsInFolder.Count == 0)
             {
                 Debug.LogError("[AssetNameModifier] No assets to rename!");
-                EditorUtility.DisplayDialog("Error", "No assets to rename!", "OK");
                 return;
             }
 
-            bool confirm = EditorUtility.DisplayDialog(
-                "Confirm Batch Rename",
-                $"Are you sure you want to rename {_assetsInFolder.Count} assets?",
-                "Yes, Rename",
-                "Cancel");
-
+            bool confirm = EditorUtility.DisplayDialog("Warning", "Rename assets?", "Rename", "Cancel");
             if (!confirm) return;
 
             Undo.IncrementCurrentGroup();
@@ -651,11 +609,7 @@ namespace NamPhuThuy.Common
 
             Undo.CollapseUndoOperations(undoGroup);
 
-            Debug.Log($"[AssetNameModifier] Batch rename complete. Successes: {successCount}, Failures: {failCount}");
-            EditorUtility.DisplayDialog(
-                "Batch Rename Complete",
-                $"Successfully renamed: {successCount}\nFailed: {failCount}",
-                "OK");
+            Debug.Log($"Done: {successCount}");
 
             _assetsInFolder.Clear();
         }

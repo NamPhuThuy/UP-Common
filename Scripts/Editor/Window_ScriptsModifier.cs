@@ -5,6 +5,7 @@
 // ───────────────────────────────────────────────────────────────────────
 
 using UnityEngine;
+using NamPhuThuy.Common;
 using UnityEngine.UIElements;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -104,16 +105,13 @@ namespace NamPhuThuy.Common
             root.style.paddingBottom = 20;
 
             // ── Header Section ──
-            var header = new Label("Scripts Modification Tool")
+            var header = new Label("Scripts Modifier")
             {
                 style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 10 }
             };
             root.Add(header);
 
-            var helpBox = new HelpBox(
-                "This tool can perform file modifications that CANNOT be undone with Ctrl+Z.\n" +
-                "Please use version control (like Git) to revert changes if needed.",
-                HelpBoxMessageType.Warning);
+            var helpBox = new HelpBox("No Undo. Use Git to revert.", HelpBoxMessageType.Warning);
             root.Add(helpBox);
 
             var mainScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1, marginTop = 10 } };
@@ -129,29 +127,14 @@ namespace NamPhuThuy.Common
         /// <summary>
         /// Creates a reusable box style for visually grouping elements
         /// </summary>
-        private VisualElement BuildBox()
-        {
-            var box = new VisualElement();
-            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
-            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
-            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
-            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
-            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
-            box.style.marginBottom = 10;
-            return box;
-        }
+        
 
         private VisualElement BuildNamespaceSection()
         {
-            var box = BuildBox();
-
-            var title = new Label("Namespace Refactoring") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
+            var box = UITKEditorHelper.BuildBox("Namespace");
 
             // Target Folder
-            var targetFolderField = new ObjectField("Target Folder")
+            var targetFolderField = new ObjectField("Folder")
             {
                 objectType = typeof(DefaultAsset),
                 value = _targetFolder
@@ -191,7 +174,7 @@ namespace NamPhuThuy.Common
             // Change Namespaces Button
             var changeBtn = new Button(ChangeNamespaces)
             {
-                text = "Change Namespaces",
+                text = "Replace",
                 style = { height = 30, unityFontStyleAndWeight = FontStyle.Bold, marginTop = 5 }
             };
             box.Add(changeBtn);
@@ -201,13 +184,10 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildArchivingSection()
         {
-            var box = BuildBox();
-
-            var title = new Label("Script Archiving") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
-            box.Add(title);
+            var box = UITKEditorHelper.BuildBox("Archiving");
 
             // Target Folder
-            var archiveFolderField = new ObjectField("Target Folder")
+            var archiveFolderField = new ObjectField("Folder")
             {
                 objectType = typeof(DefaultAsset),
                 value = _archiveFolder
@@ -231,14 +211,14 @@ namespace NamPhuThuy.Common
 
             var commentBtn = new Button(CommentOutScripts)
             {
-                text = "Comment Out",
+                text = "Comment",
                 style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
             };
             buttonRow.Add(commentBtn);
 
             var uncommentBtn = new Button(UncommentScripts)
             {
-                text = "Un-comment",
+                text = "Uncomment",
                 style = { flexGrow = 1, height = 30, unityFontStyleAndWeight = FontStyle.Bold }
             };
             buttonRow.Add(uncommentBtn);
@@ -254,30 +234,24 @@ namespace NamPhuThuy.Common
         {
             if (_targetFolder == null)
             {
-                Debug.LogError("[ScriptsModifier] Please select a target folder for namespace changing.");
-                EditorUtility.DisplayDialog("Error", "Please select a target folder for namespace changing.", "OK");
+                Debug.LogError("[ScriptsModifier] Please select folder.");
                 return;
             }
 
             if (string.IsNullOrEmpty(_oldNamespace))
             {
-                Debug.LogError("[ScriptsModifier] Old Namespace cannot be empty for this operation.");
-                EditorUtility.DisplayDialog("Error", "Old Namespace cannot be empty for this operation.", "OK");
+                Debug.LogError("[ScriptsModifier] Namespace is empty.");
                 return;
             }
 
             string path = AssetDatabase.GetAssetPath(_targetFolder);
             if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
             {
-                Debug.LogError($"[ScriptsModifier] The selected folder does not exist: {path}");
-                EditorUtility.DisplayDialog("Error", "The selected folder does not exist.", "OK");
+                Debug.LogError($"[ScriptsModifier] Folder does not exist: {path}");
                 return;
             }
 
-            Debug.Log($"[ScriptsModifier] Requesting confirmation to replace namespace '{_oldNamespace}' with '{_newNamespace}' inside '{path}'...");
-            if (EditorUtility.DisplayDialog("Confirm Namespace Change",
-                    $"Are you sure you want to replace namespace '{_oldNamespace}' with '{_newNamespace}' in all scripts inside '{path}'?",
-                    "Yes, Change Namespaces", "Cancel"))
+            if (EditorUtility.DisplayDialog("Warning", "Replace namespace?", "Replace", "Cancel"))
             {
                 ProcessFolderForNamespaceChange(path);
             }
@@ -317,14 +291,12 @@ namespace NamPhuThuy.Common
     
             if (filesChanged > 0)
             {
-                Debug.Log($"[ScriptsModifier] Successfully changed namespace in {filesChanged} files.");
-                EditorUtility.DisplayDialog("Success", $"Successfully changed the namespace in {filesChanged} files.", "OK");
+                Debug.Log($"Done: {filesChanged}");
                 AssetDatabase.Refresh();
             }
             else
             {
-                Debug.LogWarning($"[ScriptsModifier] No scripts with the exact namespace '{_oldNamespace}' were found.");
-                EditorUtility.DisplayDialog("No Changes", $"No scripts with the exact namespace '{_oldNamespace}' were found.", "OK");
+                Debug.LogWarning("No changes.");
             }
         }
 
@@ -333,21 +305,16 @@ namespace NamPhuThuy.Common
             if (_archiveFolder == null)
             {
                 Debug.LogError("[ScriptsModifier] Archive folder is null!");
-                EditorUtility.DisplayDialog("Error", "Please select a folder to comment out.", "OK");
                 return;
             }
             string path = AssetDatabase.GetAssetPath(_archiveFolder);
             if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
             {
-                Debug.LogError($"[ScriptsModifier] The archive folder does not exist: {path}");
-                EditorUtility.DisplayDialog("Error", "The archive folder does not exist.", "OK");
+                Debug.LogError($"[ScriptsModifier] Folder does not exist: {path}");
                 return;
             }
 
-            Debug.Log($"[ScriptsModifier] Requesting confirmation to comment out all scripts in: {path}");
-            if (EditorUtility.DisplayDialog("Confirm Comment Out Scripts",
-                    $"Are you sure you want to comment out all .cs files inside '{path}' using multi-line comments?",
-                    "Yes, Comment Out", "Cancel"))
+            if (EditorUtility.DisplayDialog("Warning", "Comment scripts?", "Comment", "Cancel"))
             {
                 ProcessFolderForCommenting(path, true);
             }
@@ -358,21 +325,16 @@ namespace NamPhuThuy.Common
             if (_archiveFolder == null)
             {
                 Debug.LogError("[ScriptsModifier] Archive folder is null!");
-                EditorUtility.DisplayDialog("Error", "Please select a folder to un-comment.", "OK");
                 return;
             }
             string path = AssetDatabase.GetAssetPath(_archiveFolder);
             if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
             {
-                Debug.LogError($"[ScriptsModifier] The archive folder does not exist: {path}");
-                EditorUtility.DisplayDialog("Error", "The archive folder does not exist.", "OK");
+                Debug.LogError($"[ScriptsModifier] Folder does not exist: {path}");
                 return;
             }
 
-            Debug.Log($"[ScriptsModifier] Requesting confirmation to un-comment all scripts in: {path}");
-            if (EditorUtility.DisplayDialog("Confirm Un-comment Scripts",
-                    $"Are you sure you want to remove multi-line comments from all .cs files inside '{path}'?",
-                    "Yes, Un-comment", "Cancel"))
+            if (EditorUtility.DisplayDialog("Warning", "Uncomment scripts?", "Uncomment", "Cancel"))
             {
                 ProcessFolderForCommenting(path, false);
             }
@@ -433,17 +395,14 @@ namespace NamPhuThuy.Common
                 }
             }
 
-            string action = shouldComment ? "commented out" : "un-commented";
             if (filesChanged > 0)
             {
-                Debug.Log($"[ScriptsModifier] Successfully {action} {filesChanged} script(s).");
-                EditorUtility.DisplayDialog("Success", $"Successfully {action} {filesChanged} script(s).", "OK");
+                Debug.Log($"Done: {filesChanged}");
                 AssetDatabase.Refresh();
             }
             else
             {
-                Debug.LogWarning($"[ScriptsModifier] No scripts were {action}.");
-                EditorUtility.DisplayDialog("No Changes", "No scripts needed to be modified.", "OK");
+                Debug.LogWarning("No changes.");
             }
         }
         #endregion

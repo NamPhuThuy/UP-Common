@@ -2,6 +2,11 @@
 // RULES:
 // 1. PROCESS: Use Debug.Log for trace steps.
 // 2. SAFETY: Use Debug.LogError in null/boundary checks.
+// 3. ENUM FORMAT: If used enum, use the format:
+//    public enum Type
+//    {
+//        NONE = 0, TYPE_1 = 1, TYPE_2 = 2
+//    }
 // ───────────────────────────────────────────────────────────────────────
 
 using UnityEngine;
@@ -29,10 +34,10 @@ namespace NamPhuThuy.Common
         #endregion
 
         #region Menu Item
-        [MenuItem("NamPhuThuy/Common/Window - Template (UITK)")]
+        [MenuItem("NamPhuThuy/Common/Window - Template")]
         public static void ShowWindow()
         {
-            var window = GetWindow<Window_Template_UITK>("Window Template (UITK)");
+            var window = GetWindow<Window_Template_UITK>("Window Template");
             window.minSize = new Vector2(400, 600);
             window.Show();
         }
@@ -105,26 +110,10 @@ namespace NamPhuThuy.Common
         #endregion
 
         #region UI Builders
-        /// <summary>
-        /// Creates a reusable box style for visually grouping elements
-        /// </summary>
-        private VisualElement BuildBox()
-        {
-            var box = new VisualElement();
-            box.style.borderTopWidth = 1; box.style.borderBottomWidth = 1; box.style.borderLeftWidth = 1; box.style.borderRightWidth = 1;
-            box.style.borderTopColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderLeftColor = new Color(0.15f, 0.15f, 0.15f, 1f); box.style.borderRightColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-            box.style.borderTopLeftRadius = 3; box.style.borderTopRightRadius = 3;
-            box.style.borderBottomLeftRadius = 3; box.style.borderBottomRightRadius = 3;
-            box.style.paddingLeft = 10; box.style.paddingRight = 10; box.style.paddingTop = 10; box.style.paddingBottom = 10;
-            box.style.backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.5f);
-            box.style.marginBottom = 10;
-            return box;
-        }
 
         private VisualElement BuildDataSection()
         {
-            var box = BuildBox();
+            var box = UITKEditorHelper.BuildBox();
 
             var title = new Label("Data Section") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 } };
             box.Add(title);
@@ -145,7 +134,7 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildListSection()
         {
-            var box = BuildBox();
+            var box = UITKEditorHelper.BuildBox();
 
             var title = new Label("Dynamic List Section") { style = { unityFontStyleAndWeight = FontStyle.Bold, unityTextAlign = TextAnchor.MiddleCenter, marginBottom = 5 } };
             box.Add(title);

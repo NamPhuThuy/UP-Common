@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using NamPhuThuy.Common;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -9,7 +8,7 @@ using UnityEditor.SceneManagement;
 #endif
 
 #if UNITY_EDITOR
-namespace NamPhuThuy.EditorTools
+namespace NamPhuThuy.Common
 {
     public class SceneSwitcher : Editor
     {

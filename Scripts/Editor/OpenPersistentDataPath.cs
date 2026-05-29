@@ -4,22 +4,23 @@ using UnityEngine;
 using System.Diagnostics;
 using System.IO;
 
-
-public class OpenPersistentDataPath : EditorWindow
+namespace NamPhuThuy.Common
 {
-    [MenuItem("NamPhuThuy/Common/Command - Open Persistent Data Path")]
-    static void RunOpenPersistentPath()
+    public class OpenPersistentDataPath : EditorWindow
     {
-        string path = Application.persistentDataPath;
-
-        // Ensure the directory exists
-        if (!Directory.Exists(path))
+        [MenuItem("NamPhuThuy/Common/Command - Open Persistent Data Path")]
+        static void RunOpenPersistentPath()
         {
-            Directory.CreateDirectory(path);
-        }
+            string path = Application.persistentDataPath;
+
+            // Ensure the directory exists
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
 
 #if UNITY_EDITOR_WIN
-        Process.Start("explorer.exe", path.Replace("/", "\\"));
+            Process.Start("explorer.exe", path.Replace("/", "\\"));
 #elif UNITY_EDITOR_OSX
             Process.Start("open", path);
 #elif UNITY_EDITOR_LINUX
@@ -27,6 +28,7 @@ public class OpenPersistentDataPath : EditorWindow
 #else
             UnityEngine.Debug.LogWarning("This platform is not supported for opening paths.");
 #endif
+        }
     }
 }
 #endif
