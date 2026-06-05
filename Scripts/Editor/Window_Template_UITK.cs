@@ -9,6 +9,8 @@
 //    }
 // 4. STRINGS: Use 'private const string' for resource paths, settings keys, and default folder paths.
 // 5. DIALOGS: Use Debug.LogError (or Debug.LogWarning) instead of EditorUtility.DisplayDialog for editor errors/warnings.
+// 6. FOLDERS: For fields representing folder paths, use 'DefaultAsset' fields to allow dragging and dropping folders instead of using simple string fields.
+// 7. CACHING: Provide a 'Reset to Defaults' button in the options panel to clear/override cached or persisted EditorPrefs values that might become stale or invalid.
 // ───────────────────────────────────────────────────────────────────────
 
 using UnityEngine;
