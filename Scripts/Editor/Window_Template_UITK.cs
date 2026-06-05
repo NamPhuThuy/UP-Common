@@ -7,6 +7,8 @@
 //    {
 //        NONE = 0, TYPE_1 = 1, TYPE_2 = 2
 //    }
+// 4. STRINGS: Use 'private const string' for resource paths, settings keys, and default folder paths.
+// 5. DIALOGS: Use Debug.LogError (or Debug.LogWarning) instead of EditorUtility.DisplayDialog for editor errors/warnings.
 // ───────────────────────────────────────────────────────────────────────
 
 using UnityEngine;
