@@ -6,7 +6,7 @@ using System.IO;
 
 namespace NamPhuThuy.Common
 {
-    public class OpenPersistentDataPath : EditorWindow
+    public class Command_OpenPersistentDataPath : EditorWindow
     {
         [MenuItem("NamPhuThuy/Common/Command - Open Persistent Data Path")]
         static void RunOpenPersistentPath()

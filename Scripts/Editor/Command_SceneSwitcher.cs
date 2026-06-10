@@ -10,7 +10,7 @@ using UnityEditor.SceneManagement;
 #if UNITY_EDITOR
 namespace NamPhuThuy.Common
 {
-    public class SceneSwitcher : Editor
+    public class Command_SceneSwitcher : Editor
     {
         private const string SWITCH_SCENE_MENU_NAME = "NamPhuThuy/Common/Command - Scene Switcher";
         private const string ALT = "&";

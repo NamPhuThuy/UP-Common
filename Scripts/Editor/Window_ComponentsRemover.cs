@@ -124,7 +124,8 @@ namespace NamPhuThuy.Common
                 "Targets",
                 "GameObjects",
                 _targets,
-                () => {}
+                () => {},
+                showLoadAllButton: false
             );
         }
 

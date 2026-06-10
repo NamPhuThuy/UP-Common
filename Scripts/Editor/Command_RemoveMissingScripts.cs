@@ -7,7 +7,7 @@ using UnityEngine;
 namespace NamPhuThuy.Common
 {
 #if UNITY_EDITOR
-    public class RemoveMissingScripts : MonoBehaviour
+    public class Command_RemoveMissingScripts : MonoBehaviour
     {
         [MenuItem("NamPhuThuy/Common/Command - Remove Missing Scripts")]
         public static void Remove()

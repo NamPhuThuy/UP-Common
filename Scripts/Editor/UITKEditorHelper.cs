@@ -92,7 +92,8 @@ namespace NamPhuThuy.Common
             string listLabel,
             List<T> listToModify,
             Action onListModified,
-            Action<VisualElement> extraButtonsBuilder = null) where T : UnityEngine.Object
+            Action<VisualElement> extraButtonsBuilder = null,
+            bool showLoadAllButton = true) where T : UnityEngine.Object
         {
             var box = BuildBox(sectionTitle);
 
@@ -145,44 +146,47 @@ namespace NamPhuThuy.Common
             buttonRow.Add(btnAddSelected);
 
             // 2. Load All
-            var btnFindAll = new Button(() =>
+            if (showLoadAllButton)
             {
-                bool confirm = EditorUtility.DisplayDialog(
-                    "Warning",
-                    "Load all assets?",
-                    "Load All",
-                    "Cancel"
-                );
-                if (!confirm) return;
-
-                string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
-                if (guids == null || guids.Length == 0)
+                var btnFindAll = new Button(() =>
                 {
-                    EditorUtility.DisplayDialog("Result", "0 assets found.", "OK");
-                    return;
-                }
+                    bool confirm = EditorUtility.DisplayDialog(
+                        "Warning",
+                        "Load all assets?",
+                        "Load All",
+                        "Cancel"
+                    );
+                    if (!confirm) return;
 
-                int addedCount = 0;
-                foreach (string guid in guids)
-                {
-                    string path = AssetDatabase.GUIDToAssetPath(guid);
-                    var asset = AssetDatabase.LoadAssetAtPath<T>(path);
-                    if (asset != null && !listToModify.Contains(asset))
+                    string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
+                    if (guids == null || guids.Length == 0)
                     {
-                        listToModify.Add(asset);
-                        addedCount++;
+                        EditorUtility.DisplayDialog("Result", "0 assets found.", "OK");
+                        return;
                     }
-                }
 
-                serializedObject.Update();
-                onListModified?.Invoke();
-                Debug.Log($"[UITKEditorHelper] Loaded: {addedCount} {typeof(T).Name}");
-            }) 
-            { 
-                text = "Load All", 
-                style = { flexGrow = 1, marginLeft = 2, marginRight = 2, height = 24, fontSize = 11 } 
-            };
-            buttonRow.Add(btnFindAll);
+                    int addedCount = 0;
+                    foreach (string guid in guids)
+                    {
+                        string path = AssetDatabase.GUIDToAssetPath(guid);
+                        var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+                        if (asset != null && !listToModify.Contains(asset))
+                        {
+                            listToModify.Add(asset);
+                            addedCount++;
+                        }
+                    }
+
+                    serializedObject.Update();
+                    onListModified?.Invoke();
+                    Debug.Log($"[UITKEditorHelper] Loaded: {addedCount} {typeof(T).Name}");
+                }) 
+                { 
+                    text = "Load All", 
+                    style = { flexGrow = 1, marginLeft = 2, marginRight = 2, height = 24, fontSize = 11 } 
+                };
+                buttonRow.Add(btnFindAll);
+            }
 
             // 3. Clear List
             var btnClearList = new Button(() => 

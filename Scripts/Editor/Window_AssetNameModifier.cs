@@ -46,6 +46,14 @@ namespace NamPhuThuy.Common
         // UI references
         private VisualElement _listContainer;
         private Button _applyBtn;
+        private ObjectField _assetAField;
+        private ObjectField _assetBField;
+        private ObjectField _folderField;
+        private TextField _baseNameField;
+        private TextField _suffixFormatField;
+        private IntegerField _startIndexField;
+        private Toggle _subfoldersToggle;
+        private TextField _filterExtensionField;
         #endregion
 
         #region Menu Item
@@ -121,6 +129,7 @@ namespace NamPhuThuy.Common
             // ── Content Sections ──
             mainScroll.Add(BuildSwapSection());
             mainScroll.Add(BuildBatchRenameSection());
+            mainScroll.Add(BuildUtilitySection());
         }
         #endregion
 
@@ -132,34 +141,34 @@ namespace NamPhuThuy.Common
 
         private VisualElement BuildSwapSection()
         {
-            var box = UITKEditorHelper.BuildBox("Swap");
+            var box = UITKEditorHelper.BuildBox("Swap Name");
 
             var desc = new HelpBox("Swap names of two selected assets.", HelpBoxMessageType.None);
             box.Add(desc);
 
-            var assetAField = new ObjectField("Asset A")
+            _assetAField = new ObjectField("Asset A")
             {
                 objectType = typeof(Object),
                 value = _assetA
             };
-            assetAField.RegisterValueChangedCallback(e =>
+            _assetAField.RegisterValueChangedCallback(e =>
             {
                 _assetA = e.newValue;
                 EditorPrefs.SetString(PREF_KEY_ASSET_A_PATH, _assetA != null ? AssetDatabase.GetAssetPath(_assetA) : "");
             });
-            box.Add(assetAField);
+            box.Add(_assetAField);
 
-            var assetBField = new ObjectField("Asset B")
+            _assetBField = new ObjectField("Asset B")
             {
                 objectType = typeof(Object),
                 value = _assetB
             };
-            assetBField.RegisterValueChangedCallback(e =>
+            _assetBField.RegisterValueChangedCallback(e =>
             {
                 _assetB = e.newValue;
                 EditorPrefs.SetString(PREF_KEY_ASSET_B_PATH, _assetB != null ? AssetDatabase.GetAssetPath(_assetB) : "");
             });
-            box.Add(assetBField);
+            box.Add(_assetBField);
 
             // Buttons row
             var buttonRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5 } };
@@ -168,8 +177,8 @@ namespace NamPhuThuy.Common
             {
                 Debug.Log("[AssetNameModifier] Assigning selected assets...");
                 AssignSelectedAssets();
-                assetAField.value = _assetA;
-                assetBField.value = _assetB;
+                _assetAField.value = _assetA;
+                _assetBField.value = _assetB;
             })
             {
                 text = "Use Selected",
@@ -182,8 +191,8 @@ namespace NamPhuThuy.Common
                 Debug.Log("[AssetNameModifier] Clearing swap inputs.");
                 _assetA = null;
                 _assetB = null;
-                assetAField.value = null;
-                assetBField.value = null;
+                _assetAField.value = null;
+                _assetBField.value = null;
             })
             {
                 text = "Clear",
@@ -210,12 +219,12 @@ namespace NamPhuThuy.Common
             box.Add(desc);
 
             // Folder Field
-            var folderField = new ObjectField("Folder")
+            _folderField = new ObjectField("Folder")
             {
                 objectType = typeof(DefaultAsset),
                 value = _targetFolder
             };
-            folderField.RegisterValueChangedCallback(e =>
+            _folderField.RegisterValueChangedCallback(e =>
             {
                 _targetFolder = e.newValue as DefaultAsset;
                 if (_targetFolder != null)
@@ -227,58 +236,58 @@ namespace NamPhuThuy.Common
                     EditorPrefs.SetString(PREF_KEY_TARGET_FOLDER_PATH, "");
                 }
             });
-            box.Add(folderField);
+            box.Add(_folderField);
 
             // Base Name
-            var baseNameField = new TextField("Base") { value = _baseNamePrefix };
-            baseNameField.RegisterValueChangedCallback(e =>
+            _baseNameField = new TextField("Base") { value = _baseNamePrefix };
+            _baseNameField.RegisterValueChangedCallback(e =>
             {
                 _baseNamePrefix = e.newValue;
                 EditorPrefs.SetString(PREF_KEY_BASE_NAME_PREFIX, _baseNamePrefix);
                 RefreshListUI();
             });
-            box.Add(baseNameField);
+            box.Add(_baseNameField);
 
             // Suffix Format
-            var suffixFormatField = new TextField("Format") { value = _suffixFormat };
-            suffixFormatField.RegisterValueChangedCallback(e =>
+            _suffixFormatField = new TextField("Format") { value = _suffixFormat };
+            _suffixFormatField.RegisterValueChangedCallback(e =>
             {
                 _suffixFormat = e.newValue;
                 EditorPrefs.SetString(PREF_KEY_SUFFIX_FORMAT, _suffixFormat);
                 RefreshListUI();
             });
-            box.Add(suffixFormatField);
+            box.Add(_suffixFormatField);
 
             var suffixHelp = new HelpBox("Format: _{0:00} (e.g. _01), _{0} (e.g. _1)", HelpBoxMessageType.None);
             box.Add(suffixHelp);
 
             // Start Index
-            var startIndexField = new IntegerField("Start") { value = _startIndex };
-            startIndexField.RegisterValueChangedCallback(e =>
+            _startIndexField = new IntegerField("Start") { value = _startIndex };
+            _startIndexField.RegisterValueChangedCallback(e =>
             {
                 _startIndex = e.newValue;
                 EditorPrefs.SetInt(PREF_KEY_START_INDEX, _startIndex);
                 RefreshListUI();
             });
-            box.Add(startIndexField);
+            box.Add(_startIndexField);
 
             // Include Subfolders Toggle
-            var subfoldersToggle = new Toggle("Subfolders") { value = _includeSubfolders };
-            subfoldersToggle.RegisterValueChangedCallback(e =>
+            _subfoldersToggle = new Toggle("Subfolders") { value = _includeSubfolders };
+            _subfoldersToggle.RegisterValueChangedCallback(e =>
             {
                 _includeSubfolders = e.newValue;
                 EditorPrefs.SetBool(PREF_KEY_INCLUDE_SUBFOLDERS, _includeSubfolders);
             });
-            box.Add(subfoldersToggle);
+            box.Add(_subfoldersToggle);
 
             // Filter Extension
-            var filterExtensionField = new TextField("Filter") { value = _filterByExtension };
-            filterExtensionField.RegisterValueChangedCallback(e =>
+            _filterExtensionField = new TextField("Filter") { value = _filterByExtension };
+            _filterExtensionField.RegisterValueChangedCallback(e =>
             {
                 _filterByExtension = e.newValue;
                 EditorPrefs.SetString(PREF_KEY_FILTER_BY_EXTENSION, _filterByExtension);
             });
-            box.Add(filterExtensionField);
+            box.Add(_filterExtensionField);
 
             var filterHelp = new HelpBox(".png, .prefab, .asset (optional)", HelpBoxMessageType.None);
             box.Add(filterHelp);
@@ -338,6 +347,58 @@ namespace NamPhuThuy.Common
             RefreshListUI();
 
             return box;
+        }
+
+        private VisualElement BuildUtilitySection()
+        {
+            var box = UITKEditorHelper.BuildBox("Utility");
+            var resetBtn = new Button(() =>
+            {
+                Undo.RecordObject(this, "Reset to Defaults");
+                ResetToDefaults();
+            })
+            {
+                text = "Reset Configs to Defaults",
+                style = { height = 24 }
+            };
+            box.Add(resetBtn);
+            return box;
+        }
+
+        private void ResetToDefaults()
+        {
+            _assetA = null;
+            _assetB = null;
+            _targetFolder = null;
+            _assetsInFolder.Clear();
+            _baseNamePrefix = "Asset";
+            _suffixFormat = "_{0:00}";
+            _startIndex = 1;
+            _includeSubfolders = false;
+            _filterByExtension = "";
+
+            // Clear EditorPrefs
+            EditorPrefs.DeleteKey(PREF_KEY_ASSET_A_PATH);
+            EditorPrefs.DeleteKey(PREF_KEY_ASSET_B_PATH);
+            EditorPrefs.DeleteKey(PREF_KEY_TARGET_FOLDER_PATH);
+            EditorPrefs.DeleteKey(PREF_KEY_BASE_NAME_PREFIX);
+            EditorPrefs.DeleteKey(PREF_KEY_SUFFIX_FORMAT);
+            EditorPrefs.DeleteKey(PREF_KEY_START_INDEX);
+            EditorPrefs.DeleteKey(PREF_KEY_INCLUDE_SUBFOLDERS);
+            EditorPrefs.DeleteKey(PREF_KEY_FILTER_BY_EXTENSION);
+
+            // Update UI elements
+            if (_assetAField != null) _assetAField.value = null;
+            if (_assetBField != null) _assetBField.value = null;
+            if (_folderField != null) _folderField.value = null;
+            if (_baseNameField != null) _baseNameField.value = _baseNamePrefix;
+            if (_suffixFormatField != null) _suffixFormatField.value = _suffixFormat;
+            if (_startIndexField != null) _startIndexField.value = _startIndex;
+            if (_subfoldersToggle != null) _subfoldersToggle.value = _includeSubfolders;
+            if (_filterExtensionField != null) _filterExtensionField.value = _filterByExtension;
+
+            RefreshListUI();
+            Debug.Log("[AssetNameModifier] Reset configurations to defaults.");
         }
 
         private void RefreshListUI()
