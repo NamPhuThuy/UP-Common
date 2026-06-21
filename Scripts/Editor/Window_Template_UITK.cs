@@ -12,6 +12,7 @@
 // 6. FOLDERS: For fields representing folder paths, use 'DefaultAsset' fields to allow dragging and dropping folders instead of using simple string fields.
 // 7. CACHING: Provide a 'Reset to Defaults' button in the options panel to clear/override cached or persisted EditorPrefs values that might become stale or invalid.
 // 8. LISTS: When resetting list fields, avoid re-instantiating them if they are not null. Clear them instead to prevent issues with serialized property bindings.
+// 9. NOTIFICATIONS: Reduce to use addition window to notify information, just Debug.Log it with color and method name prefix.
 // ───────────────────────────────────────────────────────────────────────
 
 using UnityEngine;
