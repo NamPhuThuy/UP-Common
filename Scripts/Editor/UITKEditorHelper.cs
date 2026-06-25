@@ -28,6 +28,10 @@ namespace NamPhuThuy.Common
     /// </summary>
     public static class UITKEditorHelper
     {
+        // Centralized Clickable Color Palette
+        private static readonly Color COLOR_OCEAN_BLUE = new Color(0.0f, 0.47f, 0.74f, 1f);
+        private static readonly Color COLOR_DANGER_BG = new Color(0.55f, 0.15f, 0.15f, 1f); // Red for destructive actions
+
         /// <summary>
         /// Creates a highly premium, visually consistent box for grouping fields in UITK Editor Windows.
         /// </summary>
@@ -141,7 +145,15 @@ namespace NamPhuThuy.Common
             }) 
             { 
                 text = "Add Selected", 
-                style = { flexGrow = 1, marginRight = 4, height = 24, fontSize = 11 } 
+                style = 
+                { 
+                    flexGrow = 1, 
+                    marginRight = 4, 
+                    height = 24, 
+                    fontSize = 11,
+                    backgroundColor = COLOR_OCEAN_BLUE,
+                    color = Color.white
+                } 
             };
             buttonRow.Add(btnAddSelected);
 
@@ -183,7 +195,16 @@ namespace NamPhuThuy.Common
                 }) 
                 { 
                     text = "Load All", 
-                    style = { flexGrow = 1, marginLeft = 2, marginRight = 2, height = 24, fontSize = 11 } 
+                    style = 
+                    { 
+                        flexGrow = 1, 
+                        marginLeft = 2, 
+                        marginRight = 2, 
+                        height = 24, 
+                        fontSize = 11,
+                        backgroundColor = COLOR_OCEAN_BLUE,
+                        color = Color.white
+                    } 
                 };
                 buttonRow.Add(btnFindAll);
             }
@@ -198,7 +219,15 @@ namespace NamPhuThuy.Common
             }) 
             { 
                 text = "Clear", 
-                style = { flexGrow = 1, marginLeft = 4, height = 24, fontSize = 11 } 
+                style = 
+                { 
+                    flexGrow = 1, 
+                    marginLeft = 4, 
+                    height = 24, 
+                    fontSize = 11,
+                    backgroundColor = COLOR_DANGER_BG, // Styled with Red Danger background
+                    color = Color.white
+                } 
             };
             buttonRow.Add(btnClearList);
 
