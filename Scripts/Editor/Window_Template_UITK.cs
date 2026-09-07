@@ -63,23 +63,49 @@ namespace NamPhuThuy.Common
         private const string WINDOW_TITLE = "Template UITK (Demo)";
 
         /*
-            NOTE: Using static expression-bodied properties (COLOR => new Color(...)) instead of "static readonly".
+            NOTE: Using static expression-bodied properties (COLOR => ...) instead of "static readonly".
             Because Color is a struct (value type), returning it from a getter method constructs it on the stack
-            on demand. This takes 0 bytes of persistent static memory in the AppDomain, unlike a static readonly field.
+            on demand. Dynamically evaluates EditorGUIUtility.isProSkin to match Unity's Dark/Light editor skin.
         */
-        private static Color COLOR_EDITOR_BG => new Color(0.22f, 0.22f, 0.22f, 1f);          // Unity Editor Default Grey
-        private static Color COLOR_GREY_BOX => new Color(0.16f, 0.16f, 0.16f, 0.6f);          // Grey panel background (grey-scale)
-        private static Color COLOR_GREY_BORDER => new Color(0.26f, 0.26f, 0.26f, 0.8f);       // Grey panel border (grey-scale)
-        
-        private static Color COLOR_OCEAN_BLUE => new Color(0.0f, 0.47f, 0.74f, 1f);          // Clickable Blue-Palette Primary (Water/Ocean)
-        private static Color COLOR_SKY_BLUE => new Color(0.53f, 0.8f, 0.92f, 1f);            // Clickable Blue-Palette Highlight (Sky)
-        private static Color COLOR_FOREST_MIST => new Color(0.8f, 0.8f, 0.8f, 1f);           // Neutral Text color
-        
-        private static Color COLOR_TAB_INACTIVE_BG => new Color(0.16f, 0.16f, 0.16f, 1f);     // Inactive tab grey background
-        private static Color COLOR_TAB_INACTIVE_BORDER => new Color(0.11f, 0.11f, 0.11f, 1f); // Inactive tab grey border
-        
-        private static Color COLOR_DANGER_BG => new Color(0.55f, 0.15f, 0.15f, 1f);          // Red background for danger actions
-        private static Color COLOR_DANGER_BORDER => new Color(0.6f, 0.2f, 0.2f, 0.8f);        // Red border for danger actions
+        private static Color COLOR_EDITOR_BG => EditorGUIUtility.isProSkin
+            ? new Color(0.22f, 0.22f, 0.22f, 1f)
+            : new Color(0.78f, 0.78f, 0.78f, 1f);
+
+        private static Color COLOR_GREY_BOX => EditorGUIUtility.isProSkin
+            ? new Color(0.16f, 0.16f, 0.16f, 0.6f)
+            : new Color(0.72f, 0.72f, 0.72f, 0.4f);
+
+        private static Color COLOR_GREY_BORDER => EditorGUIUtility.isProSkin
+            ? new Color(0.26f, 0.26f, 0.26f, 0.8f)
+            : new Color(0.60f, 0.60f, 0.60f, 0.8f);
+
+        private static Color COLOR_OCEAN_BLUE => EditorGUIUtility.isProSkin
+            ? new Color(0.0f, 0.47f, 0.74f, 1f)
+            : new Color(0.05f, 0.42f, 0.70f, 1f);
+
+        private static Color COLOR_SKY_BLUE => EditorGUIUtility.isProSkin
+            ? new Color(0.53f, 0.80f, 0.92f, 1f)
+            : new Color(0.08f, 0.45f, 0.72f, 1f);
+
+        private static Color COLOR_FOREST_MIST => EditorGUIUtility.isProSkin
+            ? new Color(0.8f, 0.8f, 0.8f, 1f)
+            : new Color(0.18f, 0.18f, 0.18f, 1f);
+
+        private static Color COLOR_TAB_INACTIVE_BG => EditorGUIUtility.isProSkin
+            ? new Color(0.16f, 0.16f, 0.16f, 1f)
+            : new Color(0.82f, 0.82f, 0.82f, 1f);
+
+        private static Color COLOR_TAB_INACTIVE_BORDER => EditorGUIUtility.isProSkin
+            ? new Color(0.11f, 0.11f, 0.11f, 1f)
+            : new Color(0.65f, 0.65f, 0.65f, 1f);
+
+        private static Color COLOR_DANGER_BG => EditorGUIUtility.isProSkin
+            ? new Color(0.55f, 0.15f, 0.15f, 1f)
+            : new Color(0.75f, 0.20f, 0.20f, 1f);
+
+        private static Color COLOR_DANGER_BORDER => EditorGUIUtility.isProSkin
+            ? new Color(0.6f, 0.2f, 0.2f, 0.8f)
+            : new Color(0.65f, 0.18f, 0.18f, 0.8f);
 
         // Tab state
         private TabType _activeTab = TabType.REGION_1;

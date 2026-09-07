@@ -24,7 +24,6 @@ namespace NamPhuThuy.Common
 #if UNITY_EDITOR
     /// <summary>
     /// Centralized helper methods for UI Toolkit (UITK) Editor Windows
-    /// ensuring visual consistency and reusability across the TN028 project.
     /// </summary>
     public static class UITKEditorHelper
     {
@@ -47,7 +46,9 @@ namespace NamPhuThuy.Common
             box.style.borderLeftWidth = 1; 
             box.style.borderRightWidth = 1;
             
-            var borderColor = new Color(0.12f, 0.12f, 0.12f, 1f);
+            var borderColor = EditorGUIUtility.isProSkin
+                ? new Color(0.12f, 0.12f, 0.12f, 1f)
+                : new Color(0.65f, 0.65f, 0.65f, 1f);
             box.style.borderTopColor = borderColor; 
             box.style.borderBottomColor = borderColor;
             box.style.borderLeftColor = borderColor; 
@@ -63,7 +64,9 @@ namespace NamPhuThuy.Common
             box.style.paddingTop = 10; 
             box.style.paddingBottom = 10;
             
-            box.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.4f);
+            box.style.backgroundColor = EditorGUIUtility.isProSkin
+                ? new Color(0.2f, 0.2f, 0.2f, 0.4f)
+                : new Color(0.70f, 0.70f, 0.70f, 0.3f);
             box.style.marginBottom = 12;
 
             if (!string.IsNullOrEmpty(titleText))
@@ -75,7 +78,9 @@ namespace NamPhuThuy.Common
                         unityFontStyleAndWeight = FontStyle.Bold, 
                         fontSize = 13, 
                         marginBottom = 8, 
-                        color = new Color(0.85f, 0.85f, 0.85f) 
+                        color = EditorGUIUtility.isProSkin
+                            ? new Color(0.85f, 0.85f, 0.85f)
+                            : new Color(0.15f, 0.15f, 0.15f)
                     } 
                 };
                 box.Add(title);
