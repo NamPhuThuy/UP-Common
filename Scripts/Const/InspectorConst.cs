@@ -1,4 +1,4 @@
-namespace NamPhuThuy
+namespace NamPhuThuy.Common
 {
     public static class InspectorConst
     {
