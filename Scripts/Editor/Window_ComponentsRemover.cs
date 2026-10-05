@@ -17,6 +17,7 @@ namespace NamPhuThuy.Common
         public enum RemovableComponentType
         {
             NONE = 0,
+            ALL                    = 100,
             MESH_COLLIDER          = 1,
             BOX_COLLIDER           = 2,
             SPHERE_COLLIDER        = 3,
@@ -168,6 +169,9 @@ namespace NamPhuThuy.Common
                 case RemovableComponentType.RIGIDBODY_2D:             return typeof(Rigidbody2D);
                 case RemovableComponentType.MESH_RENDERER:            return typeof(MeshRenderer);
                 case RemovableComponentType.SPRITE_RENDERER:          return typeof(SpriteRenderer);
+                case RemovableComponentType.TRAIL_RENDERER:           return typeof(TrailRenderer);
+                case RemovableComponentType.LINE_RENDERER:            return typeof(LineRenderer);
+                case RemovableComponentType.CANVAS_RENDERER:          return typeof(CanvasRenderer);
                 case RemovableComponentType.AUDIO_SOURCE:             return typeof(AudioSource);
                 default:
                     return null;
@@ -183,32 +187,49 @@ namespace NamPhuThuy.Common
                 return;
             }
 
-            Type selectedType = GetSelectedType();
-            if (selectedType == null)
-            {
-                Debug.LogError("[ComponentsRemover] Unsupported type.");
-                return;
-            }
-
             int removedCount = 0;
 
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName("Components Remover");
             int undoGroup = Undo.GetCurrentGroup();
 
-            foreach (GameObject go in _targets)
+            if (_selectedComponentType == RemovableComponentType.ALL)
             {
-                if (go == null) continue;
-
-                Component[] components = _includeChildren
-                    ? go.GetComponentsInChildren(selectedType, true)
-                    : go.GetComponents(selectedType);
-
-                foreach (Component comp in components)
+                foreach (GameObject go in _targets)
                 {
-                    if (comp == null) continue;
-                    Undo.DestroyObjectImmediate(comp);
-                    removedCount++;
+                    Component[] components = _includeChildren
+                        ? go.GetComponentsInChildren<Component>(true)
+                        : go.GetComponents<Component>();
+
+                    for (int i = components.Length - 1; i >= 0; i--)
+                    {
+                        Component comp = components[i];
+                        if (comp is Transform) continue;
+                        Undo.DestroyObjectImmediate(comp);
+                        removedCount++;
+                    }
+                }
+            }
+            else
+            {
+                Type selectedType = GetSelectedType();
+                if (selectedType == null)
+                {
+                    Debug.LogError("[ComponentsRemover] Unsupported type.");
+                    return;
+                }
+
+                foreach (GameObject go in _targets)
+                {
+                    Component[] components = _includeChildren
+                        ? go.GetComponentsInChildren(selectedType, true)
+                        : go.GetComponents(selectedType);
+
+                    foreach (Component comp in components)
+                    {
+                        Undo.DestroyObjectImmediate(comp);
+                        removedCount++;
+                    }
                 }
             }
 
@@ -220,14 +241,23 @@ namespace NamPhuThuy.Common
         private void SelectChildrenWithSelectedComponent()
         {
             _serializedObject.Update();
-            Type selectedType = GetSelectedType();
-            if (selectedType == null)
-            {
-                Debug.LogError("[ComponentsRemover] Unsupported type.");
-                return;
-            }
+            List<GameObject> result;
 
-            List<GameObject> result = GetChildrenWithSelectedComponent(selectedType);
+            if (_selectedComponentType == RemovableComponentType.ALL)
+            {
+                result = GetAllChildrenWithNonTransformComponents();
+            }
+            else
+            {
+                Type selectedType = GetSelectedType();
+                if (selectedType == null)
+                {
+                    Debug.LogError("[ComponentsRemover] Unsupported type.");
+                    return;
+                }
+
+                result = GetChildrenWithSelectedComponent(selectedType);
+            }
 
             if (result.Count == 0)
             {
@@ -239,6 +269,30 @@ namespace NamPhuThuy.Common
             Debug.Log($"Selected: {result.Count}");
         }
 
+        private List<GameObject> GetAllChildrenWithNonTransformComponents()
+        {
+            var collected = new List<GameObject>();
+            var seen = new HashSet<GameObject>();
+
+            foreach (GameObject root in _targets)
+            {
+                Component[] comps = root.GetComponentsInChildren<Component>(true);
+                foreach (Component comp in comps)
+                {
+                    if (comp is Transform) continue;
+
+                    GameObject go = comp.gameObject;
+                    if (!seen.Contains(go))
+                    {
+                        seen.Add(go);
+                        collected.Add(go);
+                    }
+                }
+            }
+
+            return collected;
+        }
+
         private List<GameObject> GetChildrenWithSelectedComponent(Type componentType)
         {
             var collected = new List<GameObject>();
@@ -246,15 +300,11 @@ namespace NamPhuThuy.Common
 
             foreach (GameObject root in _targets)
             {
-                if (root == null) continue;
-
                 Component[] comps = root.GetComponentsInChildren(componentType, true);
                 foreach (Component comp in comps)
                 {
-                    if (comp == null) continue;
-
                     GameObject go = comp.gameObject;
-                    if (go != null && !seen.Contains(go))
+                    if (!seen.Contains(go))
                     {
                         seen.Add(go);
                         collected.Add(go);
