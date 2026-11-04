@@ -1,0 +1,14 @@
+{
+  "name": "com.namphuthuy.common",
+  "version": "1.0.0",
+  "displayName": "UPack-Common",
+  "description": "Some common tools for a unity project.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  },
+  "author": {
+    "name": "NamPhuThuy",
+    "url": "https://github.com/NamPhuThuy"
+  }
+}

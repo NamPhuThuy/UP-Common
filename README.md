@@ -2,6 +2,25 @@
 
 This is a collection of common scripts, utilities, and editor tools used frequently across projects.
 
+## Installation
+Requires Unity 6 (6000.0) or newer and [Git](https://git-scm.com/) on the system `PATH`.
+
+In Unity, open **Window > Package Manager**, click **+ > Install package from git URL...**, and enter:
+
+```
+https://github.com/NamPhuThuy/UP-Common.git
+```
+
+Or add it to `Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.namphuthuy.common": "https://github.com/NamPhuThuy/UP-Common.git"
+  }
+}
+```
+
 ## Core Scripts
 - **`ObjectSort.cs`**: Handles sorting logic for Unity objects.
 - **`PlatformUtil.cs`**: Utility for handling platform-specific behaviors or checks.
